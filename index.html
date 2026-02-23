@@ -153,7 +153,7 @@
   }
 
   @media (max-width: 520px) {
-    #btnFeedback, #btnExpand { padding: 10px 8px; font-size: 13px; }
+    #btnComments, #btnShare, #btnExpand { padding: 10px 8px; font-size: 13px; }
   }
 
   .sr-only{
@@ -235,6 +235,44 @@
   #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
   #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
   .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+
+  /* Share modal */
+  #shareOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 70;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  #shareModal{
+    width: min(520px, 100%);
+    background: rgba(255,255,255,0.98);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.25);
+    padding: 16px;
+  }
+  .share-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    margin-top: 10px;
+  }
+  .share-grid a{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    font:inherit;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.15);
+    background:#eee;
+    color:#111;
+  }
+  .share-grid a:active{ transform: translateY(1px); }
 </style>
 </head>
 
@@ -280,8 +318,13 @@
 
   <div id="compactView">
     <div class="small" id="compactMsg">✅ Saved.</div>
+
+    <!-- ✅ changed: split Any comments? into Comments? + Share (same space) -->
     <div class="row" style="margin-top:8px; gap:8px;">
-      <button id="btnFeedback" class="secondary" type="button">Any comments?</button>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+        <button id="btnComments" class="secondary" type="button">Comments?</button>
+        <button id="btnShare" class="secondary" type="button">Share</button>
+      </div>
       <button id="btnExpand" class="secondary" type="button">Change mood</button>
     </div>
   </div>
@@ -389,6 +432,25 @@
     <div class="modal-actions" style="margin-top:12px;">
       <button id="btnFbCancel" class="secondary" type="button">Cancel</button>
       <button id="btnFbSend" type="button">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div id="shareOverlay" aria-hidden="true">
+  <div id="shareModal" role="dialog" aria-modal="true">
+    <h4>Share Mood2Know</h4>
+    <div class="small">Invite others to add one click to the world’s emotional weather.</div>
+
+    <div class="share-grid">
+      <a id="shareWhatsApp" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a id="shareReddit"   href="#" target="_blank" rel="noopener">Reddit</a>
+      <a id="shareX"        href="#" target="_blank" rel="noopener">X (Twitter)</a>
+      <a id="shareFacebook" href="#" target="_blank" rel="noopener">Facebook</a>
+    </div>
+
+    <div class="modal-actions" style="margin-top:12px;">
+      <button id="btnShareClose" class="secondary" type="button">Close</button>
     </div>
   </div>
 </div>
@@ -1034,8 +1096,6 @@ function stopManualPick() {
 
   pendingManualCoords = null;
   setManualReady(false);
-
-  
 }
 
 function startManualPick() {
@@ -1200,7 +1260,8 @@ fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFe
 el("btnFbCancel").onclick = closeFeedbackModal;
 fbText.addEventListener("input", updateFbCounter);
 
-el("btnFeedback").onclick = () => openFeedbackModal();
+/* ✅ renamed button */
+el("btnComments").onclick = () => openFeedbackModal();
 
 btnFbSend.onclick = async () => {
   btnFbSend.disabled = true;
@@ -1243,6 +1304,55 @@ btnFbSend.onclick = async () => {
   fbMsg.textContent = "✅ Thank you for your feedback!";
   setTimeout(() => closeFeedbackModal(), 700);
   btnFbSend.disabled = false;
+};
+
+/* =============================================================================
+   8.5) SHARE MODAL + LINKS (URL fixed to https://mood2know.com/)
+   ============================================================================= */
+const shareOverlay = el("shareOverlay");
+
+function openShareModal(){
+  shareOverlay.style.display = "flex";
+  shareOverlay.setAttribute("aria-hidden", "false");
+}
+function closeShareModal(){
+  shareOverlay.style.display = "none";
+  shareOverlay.setAttribute("aria-hidden", "true");
+}
+
+shareOverlay.addEventListener("click", (e) => { if (e.target === shareOverlay) closeShareModal(); });
+el("btnShareClose").onclick = closeShareModal;
+
+function buildShareLinks(){
+  const url = "https://mood2know.com/";
+  const text = "Mood2Know — the world’s emotional weather in one click";
+
+  const u = encodeURIComponent(url);
+  const t = encodeURIComponent(text);
+
+  el("shareWhatsApp").href = `https://wa.me/?text=${t}%20${u}`;
+  el("shareReddit").href   = `https://www.reddit.com/submit?url=${u}&title=${t}`;
+  el("shareX").href        = `https://twitter.com/intent/tweet?text=${t}&url=${u}`;
+  el("shareFacebook").href = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+}
+
+async function tryNativeShare(){
+  const url = "https://mood2know.com/";
+  const text = "Mood2Know — the world’s emotional weather in one click";
+
+  if (!navigator.share) return false;
+  try{
+    await navigator.share({ title: "Mood2Know", text, url });
+    return true;
+  }catch(e){
+    return false; // cancel/fail -> fallback modal
+  }
+}
+
+el("btnShare").onclick = async () => {
+  buildShareLinks();
+  const did = await tryNativeShare();
+  if (!did) openShareModal();
 };
 
 /* =============================================================================
