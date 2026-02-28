@@ -166,6 +166,46 @@
     border:0;
   }
 
+  /* ===========================
+     ✅ Apple-style minimal stats
+     =========================== */
+  .topStats{
+    margin: 6px 0 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.035);
+    border: 1px solid rgba(0,0,0,0.06);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .topStatsLine{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    opacity: .92;
+    margin: 4px 0;
+  }
+  .topStatsLeft{ white-space: nowrap; }
+  .topStatsRight{
+    margin-left:auto;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    opacity: .95;
+  }
+  .topStatsNote{
+    font-size: 12px;
+    opacity: .72;
+    margin-top: 6px;
+    line-height: 1.35;
+  }
+  .panel-compact .topStats{ display:none; }        /* hide in compact (optional) */
+  .panel-manual-micro .topStats{ display:none !important; } /* hide in micro */
+  /* =========================== */
+
   /* About accordion */
   .m2k-about{ margin-top: 10px; }
   .m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
@@ -285,6 +325,19 @@
 <div id="panel" class="panel-app">
   <h3>Mood2Know</h3>
   <div class="titleSub">the world’s emotional weather in one click</div>
+
+  <!-- ✅ NEW: top minimal stats -->
+  <div id="topStats" class="topStats" aria-label="Mood stats">
+    <div class="topStatsLine">
+      <span class="topStatsLeft">🌍 moods recorded</span>
+      <span class="topStatsRight"><b><span id="statTotal">—</span></b></span>
+    </div>
+    <div class="topStatsLine">
+      <span class="topStatsLeft">📊 average mood today</span>
+      <span class="topStatsRight"><b><span id="statAvgToday">—</span></b></span>
+    </div>
+    <div class="topStatsNote">🔒 No signup • Anonymous • Optional location</div>
+  </div>
 
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
@@ -1064,6 +1117,60 @@ const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* =============================================================================
+   ✅ NEW: TOP STATS (COUNT rows + avg today)
+   - total moods recorded = number of rows in mood_entries
+   ============================================================================= */
+function fmtInt(n){
+  try { return new Intl.NumberFormat().format(n); }
+  catch { return String(n); }
+}
+
+async function updateTopStats(){
+  const elTotal = document.getElementById("statTotal");
+  const elAvg   = document.getElementById("statAvgToday");
+  if (!elTotal || !elAvg) return;
+
+  // Total rows
+  try{
+    const { count, error } = await sb
+      .from("mood_entries")
+      .select("*", { count: "exact", head: true });
+
+    if (!error && typeof count === "number") elTotal.textContent = fmtInt(count);
+    else elTotal.textContent = "—";
+  }catch{
+    elTotal.textContent = "—";
+  }
+
+  // Average mood today (UTC day boundary)
+  try{
+    const startUTC = new Date();
+    startUTC.setUTCHours(0,0,0,0);
+    const iso = startUTC.toISOString();
+
+    const { data, error } = await sb
+      .from("mood_entries")
+      .select("mood, created_at")
+      .gte("created_at", iso)
+      .limit(50000);
+
+    if (error || !data || data.length === 0) {
+      elAvg.textContent = "—";
+      return;
+    }
+
+    let sum = 0, n = 0;
+    for (const r of data){
+      const v = Number(r.mood);
+      if (Number.isFinite(v)) { sum += v; n++; }
+    }
+    elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
+  }catch{
+    elAvg.textContent = "—";
+  }
+}
+
 function getAnonId(){
   const key = "mood_anon_id";
   let v = localStorage.getItem(key);
@@ -1166,6 +1273,7 @@ async function saveMoodAtCoords(coords) {
 
   setTimeout(async () => {
     await refreshPoints();
+    updateTopStats(); /* ✅ NEW: refresh stats after save */
     showCompact("✅ Saved. Thank you!");
     el("btnSave").disabled = false;
   }, 700);
@@ -1377,6 +1485,8 @@ map.on("load", async () => {
   });
 
   soundWatchdog();
+
+  updateTopStats(); /* ✅ NEW: show stats on first load */
 });
 </script>
 
