@@ -372,7 +372,7 @@
 
   <div id="appView">
     <div class="row moodRow">
-      <label>Your mood: <b><span id="moodValue">5</span>/10</b></label>
+   <label>Your mood:</label>
 
       <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
 
@@ -1102,7 +1102,7 @@ function restartMusicIfPossible(){
     updateMusicParams();
     return;
   }
-  if (isPhone) showSoundButton(true);
+  showSoundButton(true);
 }
 
 (function attachAudioUnlockOnce(){
@@ -1131,9 +1131,6 @@ el("btnSound").addEventListener("click", () => {
 });
 
 function soundWatchdog(){
-  const likelyPhone = isPhone || window.matchMedia("(pointer: coarse)").matches;
-  if (!likelyPhone) return;
-
   setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 900);
   setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 2500);
 }
@@ -1355,8 +1352,24 @@ function moodPhrase(v){
   if (v <= 8) return "I feel good.";
   return "I feel great.";
 }
-function updateFeeling(v = selectedMood){
-  el("moodFeeling").textContent = moodPhrase(v);
+function updateFeeling(v){
+  const mf = el("moodFeeling");
+  if (!mf) return;
+
+  // mobile: rien du tout
+  if (isPhone) {
+    mf.textContent = "";
+    return;
+  }
+
+  // desktop:
+  // - si pas de valeur (pas de hover), on affiche juste "I feel"
+  // - sinon "I feel + mood"
+  if (v === undefined || v === null) {
+    mf.textContent = "I feel";
+  } else {
+    mf.textContent = "I feel " + moodPhrase(v).replace(/^I feel\s*/i, "").replace(/\.$/, "");
+  }
 }
 
 /* render mood buttons (with gradient colors + hover text) */
@@ -1377,15 +1390,16 @@ function renderMoodButtons(){
     b.style.color = textColorForBg(bg);
 
     b.addEventListener("mouseenter", () => updateFeeling(v));
-    b.addEventListener("mouseleave", () => updateFeeling(selectedMood));
+    b.addEventListener("mouseleave", () => updateFeeling());
     b.addEventListener("focus", () => updateFeeling(v));
-    b.addEventListener("blur", () => updateFeeling(selectedMood));
+    b.addEventListener("blur", () => updateFeeling());
 
     b.addEventListener("click", () => {
       selectedMood = v;
       currentMood = v;
 
-      el("moodValue").textContent = String(v);
+      const mv = el("moodValue");
+      if (mv) mv.textContent = String(v);
       updateFeeling(v);
       updateMusicParams();
 
@@ -1694,13 +1708,14 @@ map.on("load", async () => {
   // default mood
   selectedMood = 5;
   currentMood = 5;
-  el("moodValue").textContent = "5";
-  updateFeeling(5);
+  const mv = el("moodValue");
+if (mv) mv.textContent = "5";
+  updateFeeling();
   renderMoodButtons();
   updateMusicParams();
 
   soundWatchdog();
-
+if (!isAudioRunning()) showSoundButton(true);
   updateTopStats();
   updateTrend();
 });
