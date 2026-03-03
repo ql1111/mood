@@ -1,260 +1,297 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Emotional Weather Map — See the world’s mood in one click | Mood2Know</title>
-  <meta name="description" content="Mood2Know is an emotional weather map: share your mood anonymously in one click and discover the world’s collective mood on a live map. Minimal, global, free.">
-  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+<title>Emotional Weather Map — See the world’s mood in real time | Mood2Know</title>
 
-  <link rel="canonical" href="https://mood2know.com/emotional-weather-map.html">
+<meta name="description" content="Mood2Know is an emotional weather map where people share their mood anonymously in one click and reveal the world's collective emotional landscape.">
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="Emotional Weather Map — the world’s mood in one click">
-  <meta property="og:description" content="Share your mood anonymously and reveal the collective mood on a live emotional weather map.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://mood2know.com/emotional-weather-map.html">
-  <meta property="og:site_name" content="Mood2Know">
-  <meta property="og:image" content="https://mood2know.com/og.jpg">
-  <meta property="og:image:width" content="1201">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Mood2Know — The world’s emotional weather map">
+<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Emotional Weather Map — the world’s mood in one click">
-  <meta name="twitter:description" content="Share your mood anonymously and explore a live emotional weather map.">
-  <meta name="twitter:image" content="https://mood2know.com/og.jpg">
-  <meta name="twitter:image:alt" content="Mood2Know — The world’s emotional weather map">
+<link rel="canonical" href="https://mood2know.com/emotional-weather-map.html">
 
-  <!-- Minimal styling -->
-  <style>
-    :root { color-scheme: light; }
-    body{
-      margin:0;
-      font:16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      line-height:1.6;
-      background:#fff;
-      color:#111;
-    }
-    header, main, footer{
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 24px 18px;
-    }
-    header{
-      padding-top: 34px;
-      padding-bottom: 10px;
-    }
-    .kicker{
-      font-size: 13px;
-      opacity:.75;
-      margin: 0 0 10px;
-    }
-    h1{
-      font-size: 34px;
-      line-height:1.15;
-      margin:0 0 12px;
-      letter-spacing:-0.02em;
-    }
-    .sub{
-      font-size: 18px;
-      opacity:.82;
-      margin: 0 0 18px;
-    }
-    .cta{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin: 18px 0 8px;
-    }
-    a.button{
-      display:inline-block;
-      padding: 12px 14px;
-      border-radius: 12px;
-      text-decoration:none;
-      font-weight:650;
-      border:1px solid rgba(0,0,0,.12);
-    }
-    a.primary{
-      background:#111;
-      color:#fff;
-      border-color:#111;
-    }
-    a.secondary{
-      background:#fff;
-      color:#111;
-    }
-    hr{
-      border:0;
-      border-top:1px solid rgba(0,0,0,.10);
-      margin: 26px 0;
-    }
-    h2{
-      font-size: 20px;
-      margin: 24px 0 10px;
-      letter-spacing:-0.01em;
-    }
-    ul{ padding-left: 18px; }
-    .note{
-      font-size: 13px;
-      opacity:.75;
-    }
-    footer{
-      padding-top: 10px;
-      padding-bottom: 34px;
-      opacity:.85;
-      font-size: 13px;
-    }
-    .faq details{
-      border-top:1px solid rgba(0,0,0,.10);
-      padding: 12px 0;
-    }
-    .faq details:last-child{
-      border-bottom:1px solid rgba(0,0,0,.10);
-    }
-    .faq summary{
-      cursor:pointer;
-      font-weight:650;
-    }
-  </style>
+<!-- Open Graph -->
+<meta property="og:title" content="Emotional Weather Map — the world’s mood in one click">
+<meta property="og:description" content="Share your mood anonymously and reveal the collective mood on a live emotional weather map.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mood2know.com/emotional-weather-map.html">
+<meta property="og:site_name" content="Mood2Know">
+<meta property="og:image" content="https://mood2know.com/og.jpg">
 
-  <!-- Optional: JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebPage",
-    "name":"Emotional Weather Map — Mood2Know",
-    "url":"https://mood2know.com/emotional-weather-map.html",
-    "description":"Mood2Know is an emotional weather map: share your mood anonymously in one click and discover the world’s collective mood on a live map.",
-    "isPartOf":{
-      "@type":"WebSite",
-      "name":"Mood2Know",
-      "url":"https://mood2know.com/"
-    }
-  }
-  </script>
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emotional Weather Map — the world’s mood in one click">
+<meta name="twitter:description" content="Explore a live emotional weather map built from anonymous mood signals.">
+<meta name="twitter:image" content="https://mood2know.com/og.jpg">
+
+<style>
+:root { color-scheme: light; }
+
+body{
+margin:0;
+font:16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+line-height:1.6;
+background:#fff;
+color:#111;
+}
+
+header, main, footer{
+max-width:860px;
+margin:auto;
+padding:24px 18px;
+}
+
+header{
+padding-top:34px;
+padding-bottom:10px;
+}
+
+.kicker{
+font-size:13px;
+opacity:.75;
+margin-bottom:10px;
+}
+
+h1{
+font-size:34px;
+line-height:1.15;
+margin-bottom:12px;
+letter-spacing:-0.02em;
+}
+
+.sub{
+font-size:18px;
+opacity:.82;
+margin-bottom:18px;
+}
+
+.cta{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin:18px 0 8px;
+}
+
+a.button{
+display:inline-block;
+padding:12px 14px;
+border-radius:12px;
+text-decoration:none;
+font-weight:650;
+border:1px solid rgba(0,0,0,.12);
+}
+
+a.primary{
+background:#111;
+color:#fff;
+border-color:#111;
+}
+
+a.secondary{
+background:#fff;
+color:#111;
+}
+
+hr{
+border:0;
+border-top:1px solid rgba(0,0,0,.10);
+margin:26px 0;
+}
+
+h2{
+font-size:20px;
+margin:24px 0 10px;
+letter-spacing:-0.01em;
+}
+
+ul{
+padding-left:18px;
+}
+
+.note{
+font-size:13px;
+opacity:.75;
+}
+
+footer{
+padding-bottom:34px;
+opacity:.85;
+font-size:13px;
+}
+
+.faq details{
+border-top:1px solid rgba(0,0,0,.10);
+padding:12px 0;
+}
+
+.faq details:last-child{
+border-bottom:1px solid rgba(0,0,0,.10);
+}
+
+.faq summary{
+cursor:pointer;
+font-weight:650;
+}
+</style>
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+ "@context":"https://schema.org",
+ "@type":"WebPage",
+ "name":"Emotional Weather Map — Mood2Know",
+ "url":"https://mood2know.com/emotional-weather-map.html",
+ "description":"Mood2Know is an emotional weather map where people share their mood anonymously in one click and reveal global emotional patterns.",
+ "isPartOf":{
+   "@type":"WebSite",
+   "name":"Mood2Know",
+   "url":"https://mood2know.com/"
+ }
+}
+</script>
+
 </head>
 
 <body>
-  <header>
-    <p class="kicker">Mood2Know</p>
-    <h1>Emotional Weather Map: see the world’s mood in one click</h1>
-    <p class="sub">
-      Mood2Know is a minimalist global experiment: share how you feel right now (0–10) and unlock a live snapshot of the collective mood on a world map.
-      No account. No personal story. Just a moment, anonymously shared.
-    </p>
 
-    <div class="cta">
-      <a class="button primary" href="/">Open the map</a>
-      <a class="button secondary" href="/">How it works</a>
-    </div>
+<header>
 
-    <p class="note">
-      Tip: this page is meant for search visibility and explains Mood2Know in plain words.
-      The experience lives on the map.
-    </p>
-  </header>
+<p class="kicker">Mood2Know</p>
 
-  <main>
-    <hr>
+<h1>Emotional Weather Map: see the world’s mood in one click</h1>
 
-    <h2>What is an “emotional weather map”?</h2>
-    <p>
-      We talk about the weather because it’s a simple shared language: today is sunny, cloudy, stormy.
-      Mood2Know uses the same idea for emotions. An emotional weather map is a collective snapshot of how people feel across the world—right now—shown as a map, not as a profile.
-    </p>
-    <p>
-      Instead of long surveys, Mood2Know asks one question: <strong>How is your mood, from 0 to 10?</strong>
-      You answer in one click, anonymously, and the map reveals aggregated moods from other participants.
-      You can <a href="/">open the live map here</a> and submit your mood in seconds.
-    </p>
+<p class="sub">
+Mood2Know is a minimalist global experiment: share how you feel right now (0–10) and unlock a live snapshot of the collective mood on a <strong>world mood map</strong>.
+No account. No personal story. Just a moment, anonymously shared.
+</p>
 
-    <h2>How Mood2Know works</h2>
-    <ul>
-      <li><strong>Pick a mood</strong> (0 to 10).</li>
-      <li><strong>Locate + Save</strong> (your device provides a location).</li>
-      <li><strong>See the world’s mood</strong> on a live map with clustered markers.</li>
-    </ul>
-    <p class="note">
-      Mood2Know is designed to be lightweight: no account, no feed, no social pressure—just participation.
-    </p>
+<p>
+This makes Mood2Know both an <strong>emotional weather map</strong> and a simple <strong>global mood map</strong> built from anonymous signals.
+</p>
 
-    <h2>Anonymous by design</h2>
-    <p>
-      Mood2Know is not a mood diary. It is not therapy, and it does not try to explain why you feel a certain way.
-      The goal is to make a collective signal visible without collecting personal stories.
-    </p>
-    <p>
-      The system stores a simple data point: mood + approximate location + a random anonymous identifier. That’s it.
-      No names, no emails, no profiles.
-    </p>
+<div class="cta">
+<a class="button primary" href="/">Open the map</a>
+<a class="button secondary" href="#how-it-works">How it works</a>
+</div>
 
-    <h2>Why this experiment matters</h2>
-    <p>
-      Most emotions remain invisible. Yet, at any moment, millions of people are experiencing something intense, quiet, joyful, heavy, or uncertain.
-      Seeing the collective mood can help us zoom out: your feeling is real, and it’s also part of a larger human landscape.
-    </p>
-    <p>
-      Over time, the “emotional weather” changes. Observing those shifts can reveal patterns: contrast between regions, time zones, and moments.
-      The map becomes a living snapshot of diversity—without judging it.
-    </p>
+<p class="note">
+Tip: this page is meant for search visibility and explains Mood2Know in plain words.
+The experience lives on the map.
+</p>
 
-    <h2>The 10,000 participants milestone</h2>
-    <p>
-      Mood2Know aims for a simple threshold: <strong>10,000 participants</strong>.
-      The more people contribute, the more meaningful the collective picture becomes.
-      With enough responses, the map becomes less “random dots” and more like a real signal.
-    </p>
+</header>
 
-    <hr>
+<main>
 
-    <section class="faq" aria-label="FAQ">
-      <h2>FAQ</h2>
+<hr>
 
-      <details>
-        <summary>Is Mood2Know a diagnostic tool?</summary>
-        <p>No. Mood2Know does not analyze or diagnose. It is a minimalist participation space—nothing more.</p>
-      </details>
+<h2>What is an emotional weather map?</h2>
 
-      <details>
-        <summary>Do I need an account?</summary>
-        <p>No. You can participate without signing up. The experience is intentionally frictionless.</p>
-      </details>
+<p>
+We talk about the weather because it’s a simple shared language: today is sunny, cloudy, stormy.
+Mood2Know uses the same idea for emotions.
+An emotional weather map is a collective snapshot of how people feel across the world — right now — displayed as a <strong>real-time world mood map</strong>.
+</p>
 
-      <details>
-        <summary>Why do you ask for my location?</summary>
-        <p>The map needs a location to place your mood. The goal is to show a collective picture across places.</p>
-      </details>
+<p>
+Instead of long surveys, Mood2Know asks one question:
+<strong>How is your mood, from 0 to 10?</strong>
+You answer in one click, anonymously, and the map reveals aggregated moods from other participants.
+</p>
 
-      <details>
-        <summary>Can I change my mood later?</summary>
-        <p>Yes. You can submit again later—your newest mood replaces your previous one for your anonymous ID.</p>
-      </details>
+<p>
+You can also explore the
+<a href="/world-mood-map.html">world mood map</a>
+to see how global emotions appear across different regions.
+</p>
 
-      <details>
-        <summary>How can I help?</summary>
-        <p>Participate, share the map, and invite one person. The experiment becomes meaningful with volume.</p>
-      </details>
-    </section>
+<h2 id="how-it-works">How Mood2Know works</h2>
 
-    <hr>
+<ul>
+<li><strong>Pick a mood</strong> (0 to 10).</li>
+<li><strong>Locate + Save</strong> (your device provides a location).</li>
+<li><strong>See the world’s mood</strong> on a live map with clustered markers.</li>
+</ul>
 
-    <h2>Open the emotional weather map</h2>
-    <p>
-      Ready to contribute? Share your mood in one click and explore the world’s collective emotional weather.
-    </p>
-    <div class="cta">
-      <a class="button primary" href="/">Open Mood2Know</a>
-      <a class="button secondary" href="https://mood2know.com/">mood2know.com</a>
-    </div>
-  </main>
+<p class="note">
+Mood2Know is designed to be lightweight: no account, no feed, no social pressure — just participation.
+</p>
 
-  <footer>
-    <p>
-      Mood2Know — a minimalist global experiment. If you share this page, you help the project reach critical mass.
-    </p>
-  </footer>
+<h2>Anonymous by design</h2>
+
+<p>
+Mood2Know is not a mood diary. It is not therapy and does not attempt to explain why you feel a certain way.
+The goal is simply to make a collective emotional signal visible.
+</p>
+
+<p>
+The system stores a simple data point: mood, approximate location and an anonymous identifier.
+No names, no emails and no profiles.
+</p>
+
+<h2>Why this experiment matters</h2>
+
+<p>
+Most emotions remain invisible. Yet at any moment millions of people are experiencing joy, stress, calm or uncertainty.
+A global emotional map helps visualize this invisible layer of human experience.
+</p>
+
+<p>
+Over time the emotional weather shifts across countries and time zones,
+revealing how collective mood evolves around the world.
+</p>
+
+<hr>
+
+<section class="faq" aria-label="FAQ">
+
+<h2>FAQ</h2>
+
+<details>
+<summary>Is Mood2Know a diagnostic tool?</summary>
+<p>No. Mood2Know does not analyze or diagnose emotions. It simply visualizes anonymous mood signals.</p>
+</details>
+
+<details>
+<summary>Do I need an account?</summary>
+<p>No account is required. Participation is intentionally frictionless.</p>
+</details>
+
+<details>
+<summary>Why do you ask for location?</summary>
+<p>The map needs a location to place each mood on the global map.</p>
+</details>
+
+<details>
+<summary>Can I update my mood?</summary>
+<p>Yes. Submitting again updates your latest mood for your anonymous identifier.</p>
+</details>
+
+</section>
+
+<hr>
+
+<h2>Open the emotional weather map</h2>
+
+<p>
+Ready to participate? Share your mood and explore the global emotional landscape.
+</p>
+
+<div class="cta">
+<a class="button primary" href="/">Open Mood2Know</a>
+</div>
+
+</main>
+
+<footer>
+
+<p>
+Mood2Know — a minimalist global experiment exploring the collective mood of humanity.
+</p>
+
+</footer>
+
 </body>
 </html>
