@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -365,6 +366,13 @@
       <span class="topStatsLeft">📊 average mood today</span>
       <span class="topStatsRight"><b><span id="statAvgToday">—</span></b></span>
     </div>
+
+    <!-- ✅ NEW -->
+    <div class="topStatsLine">
+      <span class="topStatsLeft">😊 happiest country today</span>
+      <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
+    </div>
+
     <div class="topStatsNote">🔒 No signup • Anonymous • Optional location</div>
   </div>
 
@@ -372,7 +380,7 @@
 
   <div id="appView">
     <div class="row moodRow">
-   <label>Your mood:</label>
+      <label>Your mood:</label>
 
       <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
 
@@ -1143,6 +1151,27 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =============================================================================
+   ✅ NEW: reverse geocode country from coords (stores ISO2 like "FR")
+   ============================================================================= */
+async function getCountryFromCoords(lat, lon){
+  try{
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+    const r = await fetch(url, {
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "Mood2Know/1.0 (https://mood2know.com)"
+      }
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const cc = j?.address?.country_code;
+    return cc ? cc.toUpperCase() : null;
+  }catch{
+    return null;
+  }
+}
+
+/* =============================================================================
    ✅ TOP STATS (COUNT rows + avg today)
    ============================================================================= */
 function fmtInt(n){
@@ -1192,6 +1221,67 @@ async function updateTopStats(){
     elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
   }catch{
     elAvg.textContent = "—";
+  }
+}
+
+/* =============================================================================
+   ✅ NEW: HAPPIEST COUNTRY TODAY (requires mood_entries.country)
+   ============================================================================= */
+async function updateHappiestCountryToday(){
+  const elHappy = document.getElementById("statHappiest");
+  if (!elHappy) return;
+
+  try{
+    const startUTC = new Date();
+    startUTC.setUTCHours(0,0,0,0);
+
+    const { data, error } = await sb
+      .from("mood_entries")
+      .select("country, mood, created_at")
+      .gte("created_at", startUTC.toISOString())
+      .not("country", "is", null)
+      .limit(50000);
+
+    if (error || !data || data.length === 0){
+      elHappy.textContent = "—";
+      return;
+    }
+
+    const byCountry = new Map();
+
+    for (const r of data){
+      const v = Number(r.mood);
+      if (!Number.isFinite(v)) continue;
+
+      const c = r.country;
+      if (!c) continue;
+
+      const cur = byCountry.get(c) || { sum: 0, count: 0 };
+      cur.sum += v;
+      cur.count += 1;
+      byCountry.set(c, cur);
+    }
+
+    let bestCountry = null;
+    let bestAvg = -Infinity;
+
+    for (const [country, agg] of byCountry.entries()){
+      // ✅ optional anti-noise (enable if you want a minimum number of votes)
+      // if (agg.count < 5) continue;
+
+      const avg = agg.sum / agg.count;
+      if (avg > bestAvg){
+        bestAvg = avg;
+        bestCountry = country;
+      }
+    }
+
+    elHappy.textContent = bestCountry
+      ? `${bestCountry} (${bestAvg.toFixed(1)})`
+      : "—";
+
+  }catch{
+    elHappy.textContent = "—";
   }
 }
 
@@ -1475,9 +1565,12 @@ async function saveMoodAtCoords(coords) {
 
   setAppMessage("Saving your mood…");
 
+  // ✅ NEW: compute country from coords (best-effort)
+  const country = await getCountryFromCoords(coords.lat, coords.lon);
+
   const { error } = await sb
     .from("mood_entries")
-    .insert([{ anon_id: anonId, mood, lon: coords.lon, lat: coords.lat }]);
+    .insert([{ anon_id: anonId, mood, lon: coords.lon, lat: coords.lat, country }]);
 
   if (error) {
     setAppMessage("Save failed: " + (error.message || "Unknown error"));
@@ -1498,6 +1591,7 @@ async function saveMoodAtCoords(coords) {
   setTimeout(async () => {
     await refreshPoints();
     updateTopStats();
+    updateHappiestCountryToday(); // ✅ NEW
     updateTrend();
     showCompact("✅ Saved. Thank you!");
   }, 700);
@@ -1709,14 +1803,16 @@ map.on("load", async () => {
   selectedMood = 5;
   currentMood = 5;
   const mv = el("moodValue");
-if (mv) mv.textContent = "5";
+  if (mv) mv.textContent = "5";
   updateFeeling();
   renderMoodButtons();
   updateMusicParams();
 
   soundWatchdog();
-if (!isAudioRunning()) showSoundButton(true);
+  if (!isAudioRunning()) showSoundButton(true);
+
   updateTopStats();
+  updateHappiestCountryToday(); // ✅ NEW
   updateTrend();
 });
 </script>
@@ -1775,3 +1871,4 @@ if (!isAudioRunning()) showSoundButton(true);
 
 </body>
 </html>
+```
