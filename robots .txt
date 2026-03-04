@@ -1,0 +1,3 @@
+User-agent 
+Allow 
+Sitemap httpsmood2know.comsitemap.xml
