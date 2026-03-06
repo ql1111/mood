@@ -1,993 +1,508 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="google-site-verification" content="GwVBCPhOP2ARcKB4mcqgDfqKZ9LX_cp84PxNzmJgWWI" />
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mood2Know — Replay Auto WOW</title>
+  <meta name="robots" content="noindex,nofollow">
 
-<title>Mood2Know — Replay (private)</title>
+  <link rel="stylesheet" href="./maplibre-gl.css">
 
-<meta name="robots" content="noindex,nofollow">
-
-<link rel="stylesheet" href="./maplibre-gl.css">
-
-<style>
-  html, body { margin:0; height:100%; font:16px system-ui; }
-  :root { --vh: 1vh; }
-
-  #map{
-    position:fixed; inset:0;
-    height: calc(var(--vh) * 100);
-  }
-
-  #panel{
-    position: fixed;
-    z-index: 10;
-    background: rgba(255,255,255,0.96);
-    border-radius: 16px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.25);
-    padding: 16px;
-    transition: width .25s ease, padding .25s ease, border-radius .25s ease, transform .25s ease, opacity .2s ease;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-    left: 12px;
-    top: 12px;
-
-    max-height: calc(var(--vh) * 100 - 24px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    overflow-x: hidden;
-  }
-
-  .panel-app{
-    width: 340px;
-    max-width: calc(100vw - 24px);
-  }
-
-  .panel-compact{
-    width: 260px;
-    max-width: calc(100vw - 24px);
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
-
-  /* ✅ NEW: replay minimal panel (during PLAY) */
-  .panel-replay-min{
-    width: 210px;
-    max-width: 210px;
-    padding: 10px 10px;
-    border-radius: 14px;
-  }
-  .panel-replay-min .titleSub,
-  .panel-replay-min #dragHandle,
-  .panel-replay-min #topStats,
-  .panel-replay-min #about,
-  .panel-replay-min #replayControls,
-  .panel-replay-min #replayHelp,
-  .panel-replay-min #appMsg {
-    display:none !important;
-  }
-  .panel-replay-min #replayHud { display:block !important; }
-  .panel-replay-min h3 { font-size: 15px; }
-
-  /* ✅ ultra micro panel during manual selection: ONLY ONE BUTTON visible (kept) */
-  .panel-manual-micro{
-    width: 170px;
-    max-width: 170px;
-    padding: 10px 10px;
-    border-radius: 14px;
-  }
-  .panel-manual-micro .titleSub,
-  .panel-manual-micro #dragHandle,
-  .panel-manual-micro #hint,
-  .panel-manual-micro #soundRow,
-  .panel-manual-micro #appMsg,
-  .panel-manual-micro #about,
-  .panel-manual-micro .moodRow,
-  .panel-manual-micro #trendBox,
-  .panel-manual-micro #topStats,
-  .panel-manual-micro #replayControls,
-  .panel-manual-micro #replayHelp,
-  .panel-manual-micro #replayHud{
-    display:none !important;
-  }
-
-  h3 { margin:0; font-size:18px; }
-
-  .titleSub{
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.15;
-    margin-top: 2px;
-    margin-bottom: 10px;
-    opacity: 0.75;
-  }
-
-  .panel-compact .titleSub { display: none; }
-
-  #dragHandle{
-    width: 54px;
-    height: 6px;
-    border-radius: 999px;
-    margin: 6px auto 10px;
-    background: rgba(0,0,0,0.18);
-    cursor: grab;
-    touch-action: none;
-  }
-  #dragHandle:active{ cursor: grabbing; }
-
-  .row { display:grid; gap:10px; margin:10px 0; }
-
-  input, button, textarea, select{
-    font:inherit;
-    padding:12px;
-    border-radius:12px;
-    border:1px solid rgba(0,0,0,.15);
-  }
-  textarea{ resize: vertical; min-height: 120px; }
-
-  button{ background:#111; color:#fff; border:0; cursor:pointer; }
-  button.secondary{ background:#eee; color:#111; border:1px solid rgba(0,0,0,.12); }
-  button:disabled { opacity:.55; cursor: not-allowed; }
-
-  .small{ font-size:13px; opacity:.75; }
-  .msg{ white-space:pre-wrap; font-size:13px; }
-
-  .sr-only{
-    position:absolute;
-    width:1px; height:1px;
-    padding:0; margin:-1px;
-    overflow:hidden;
-    clip: rect(0,0,0,0);
-    white-space: nowrap;
-    border:0;
-  }
-
-  /* ✅ Apple-style minimal stats */
-  .topStats{
-    margin: 6px 0 12px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(0,0,0,0.035);
-    border: 1px solid rgba(0,0,0,0.06);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  .topStatsLine{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:10px;
-    font-size: 12.5px;
-    line-height: 1.35;
-    letter-spacing: 0.01em;
-    opacity: .92;
-    margin: 4px 0;
-  }
-  .topStatsLeft{ white-space: nowrap; }
-  .topStatsRight{
-    margin-left:auto;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-    opacity: .95;
-  }
-  .topStatsNote{
-    font-size: 12px;
-    opacity: .72;
-    margin-top: 6px;
-    line-height: 1.35;
-  }
-  .panel-compact .topStats{ display:none; }
-  /* =========================== */
-
-  /* ✅ Replay HUD (only shown in panel-replay-min) */
-  #replayHud{
-    display:none;
-    margin-top: 6px;
-  }
-  .hudLine{
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    font-size: 12.5px;
-    line-height: 1.35;
-    opacity: .92;
-    font-variant-numeric: tabular-nums;
-    margin: 4px 0;
-  }
-  .hudLeft{ white-space:nowrap; }
-  .hudRight{ margin-left:auto; font-weight:800; }
-
-  /* About accordion (kept) */
-  .m2k-about{ margin-top: 10px; }
-  .m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
-
-  .m2k-summary{
-    cursor:pointer;
-    list-style:none;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    user-select:none;
-    font-size: 12.5px;
-    opacity: .72;
-  }
-  .m2k-summary::-webkit-details-marker{ display:none; }
-  .m2k-summary:hover{ opacity: .95; }
-  .m2k-summary-icon{ margin-left:auto; opacity: .6; }
-
-  .m2k-lang{
-    margin-top: 8px;
-    display:flex;
-    gap:6px;
-    opacity: .75;
-    flex-wrap: wrap;
-  }
-  .m2k-lang-btn{
-    color:#111;
-    border: 1px solid rgba(0,0,0,.12);
-    background: transparent;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 11.5px;
-    cursor: pointer;
-  }
-  .m2k-lang-btn[aria-pressed="true"]{
-    background: rgba(0,0,0,0.06);
-    border-color: rgba(0,0,0,.28);
-    opacity: 1;
-  }
-
-  .m2k-text{
-    margin-top: 10px;
-    font-size: 13px;
-    line-height: 1.55;
-    opacity: .88;
-  }
-  .m2k-text p{ margin: 0 0 10px; }
-
-  @media (max-width: 520px) {
-    .panel-compact{
-      width: 150px;
-      max-width: 150px;
-      padding: 9px 10px;
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font: 16px system-ui;
+      background: #000;
     }
-    .panel-replay-min{
-      width: 170px;
-      max-width: 170px;
+
+    :root { --vh: 1vh; }
+
+    #map {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: calc(var(--vh) * 100);
     }
-    button, input, textarea, select { padding: 14px; font-size: 16px; }
-  }
-</style>
+
+    .sr-only{
+      position:absolute;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border:0;
+    }
+  </style>
 </head>
 
 <body>
-<h1 class="sr-only">Mood2Know – Replay</h1>
+  <h1 class="sr-only">Mood2Know – Replay automatique WOW</h1>
+  <div id="map"></div>
 
-<div id="map"></div>
+  <script src="./maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<div id="panel" class="panel-app">
-  <h3>Mood2Know</h3>
-  <div class="titleSub">the world’s emotional weather in one click</div>
+  <script>
+    /* =========================================================================
+       0) MOBILE VIEWPORT FIX
+       ========================================================================= */
+    function setVh() {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    }
+    window.addEventListener('resize', setVh);
+    setVh();
 
-  <!-- top stats (kept) -->
-  <div id="topStats" class="topStats" aria-label="Mood stats">
-    <div class="topStatsLine">
-      <span class="topStatsLeft">🌍 moods recorded</span>
-      <span class="topStatsRight"><b><span id="statTotal">—</span></b></span>
-    </div>
-    <div class="topStatsLine">
-      <span class="topStatsLeft">📊 average mood today</span>
-      <span class="topStatsRight"><b><span id="statAvgToday">—</span></b></span>
-    </div>
-    <div class="topStatsNote">🔒 No signup • Anonymous • Private replay page</div>
-  </div>
+    /* =========================================================================
+       1) MAP SETUP
+       ========================================================================= */
+    const map = new maplibregl.Map({
+      container: "map",
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: "raster",
+            tiles: [
+              "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            ],
+            tileSize: 256,
+            attribution: "© OpenStreetMap contributors"
+          }
+        },
+        layers: [{ id: "osm", type: "raster", source: "osm" }]
+      },
+      center: [0, 20],
+      zoom: 2,
+      pitch: 0
+    });
 
-  <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
+    /* =========================================================================
+       2) MOOD ICONS (0..10)
+       ========================================================================= */
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
 
-  <!-- ✅ Replay controls (START panel) -->
-  <div id="replayControls">
-    <div class="row" style="margin-top:6px;">
-      <div class="small" style="opacity:.85; font-weight:700;">Replay (for Reel capture)</div>
+    function lerpColor(c1, c2, t) {
+      const r = Math.round(lerp(c1[0], c2[0], t));
+      const g = Math.round(lerp(c1[1], c2[1], t));
+      const b = Math.round(lerp(c1[2], c2[2], t));
+      return `rgb(${r},${g},${b})`;
+    }
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-        <button id="btnPlay">▶ Play</button>
-        <button id="btnReset" class="secondary" type="button">↺ Reset</button>
-      </div>
+    function moodImageData(level, size = 96) {
+      const t = Math.max(0, Math.min(1, level / 10));
+      const red = [215, 25, 28];
+      const yellow = [255, 255, 191];
+      const green = [26, 150, 65];
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-        <label class="small" style="display:grid; gap:6px; opacity:.85;">
-          Duration
-          <select id="dur" aria-label="Duration">
-            <option value="10">10s</option>
-            <option value="12" selected>12s</option>
-            <option value="15">15s</option>
-            <option value="20">20s</option>
-          </select>
-        </label>
-        <label class="small" style="display:grid; gap:6px; opacity:.85;">
-          Speed
-          <select id="speed" aria-label="Speed">
-            <option value="0.8">0.8×</option>
-            <option value="1" selected>1×</option>
-            <option value="1.6">1.6×</option>
-            <option value="2.4">2.4×</option>
-          </select>
-        </label>
-      </div>
+      const fill = (t < 0.5)
+        ? lerpColor(red, yellow, t / 0.5)
+        : lerpColor(yellow, green, (t - 0.5) / 0.5);
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-        <label class="small" style="display:grid; gap:6px; opacity:.85;">
-          Max points
-          <select id="limit" aria-label="Max points">
-            <option value="3000">3k</option>
-            <option value="8000">8k</option>
-            <option value="20000" selected>20k</option>
-          </select>
-        </label>
-        <label class="small" style="display:grid; gap:6px; opacity:.85;">
-          Camera
-          <select id="cameraMode" aria-label="Camera mode">
-            <option value="wow" selected>WOW fly</option>
-            <option value="calm">Calm</option>
-            <option value="off">Off</option>
-          </select>
-        </label>
-      </div>
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
 
-      <label class="small" style="display:grid; gap:6px; opacity:.85;">
-        Scrub
-        <input id="scrub" type="range" min="0" max="1000" value="0" />
-      </label>
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = size * 0.42;
 
-      <div class="small" id="replayHelp" style="opacity:.75;">
-        Tips: press <b>Space</b> play/pause • <b>R</b> reset • <b>H</b> hide panel
-      </div>
-    </div>
-  </div>
+      ctx.beginPath();
+      ctx.arc(cx, cy + 3, r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.fill();
 
-  <!-- ✅ Minimal HUD shown ONLY during PLAY -->
-  <div id="replayHud" aria-label="Replay HUD">
-    <div class="hudLine">
-      <span class="hudLeft">⏱ time</span>
-      <span class="hudRight" id="hudTime">—</span>
-    </div>
-    <div class="hudLine">
-      <span class="hudLeft">📍 points</span>
-      <span class="hudRight" id="hudCount">0</span>
-    </div>
-    <div class="hudLine">
-      <span class="hudLeft">📊 avg</span>
-      <span class="hudRight"><span id="hudAvg">—</span>/10</span>
-    </div>
-  </div>
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.lineWidth = Math.max(3, size * 0.04);
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.stroke();
 
-  <div id="appMsg" class="msg"></div>
+      const eyeY = cy - size * 0.10;
+      const eyeDX = size * 0.14;
+      const eyeR = size * 0.04;
 
-  <!-- ABOUT (kept, optional) -->
-  <section id="about" class="m2k-about" aria-label="About Mood2Know">
-    <details class="m2k-details" id="m2kDetails">
-      <summary class="m2k-summary">
-        <span class="m2k-summary-label" data-i18n="summary">Why Mood2Know?</span>
-        <span class="m2k-summary-icon" aria-hidden="true">▾</span>
-      </summary>
+      ctx.beginPath();
+      ctx.arc(cx - eyeDX, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.arc(cx + eyeDX, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,0.75)";
+      ctx.fill();
 
-      <div class="m2k-lang" aria-label="Language">
-        <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="es">ES</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="it">IT</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="de">DE</button>
-        <button type="button" class="m2k-lang-btn" data-set-lang="zh">中文</button>
-      </div>
+      const browY = eyeY - size * 0.08;
+      const browTilt = lerp(0.20, -0.20, t);
+      ctx.lineWidth = Math.max(3, size * 0.035);
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineCap = "round";
 
-      <div class="m2k-text" lang="en" data-lang="en">
-        <p><strong>Private replay page.</strong></p>
-        <p>This page animates recorded moods for making short videos.</p>
-      </div>
+      ctx.beginPath();
+      ctx.moveTo(cx - eyeDX - size * 0.06, browY + browTilt * size * 0.08);
+      ctx.lineTo(cx - eyeDX + size * 0.06, browY - browTilt * size * 0.08);
+      ctx.stroke();
 
-      <div class="m2k-text" lang="fr" data-lang="fr">
-        <p><strong>Page replay privée.</strong></p>
-        <p>Cette page anime les humeurs enregistrées pour faire des vidéos.</p>
-      </div>
+      ctx.beginPath();
+      ctx.moveTo(cx + eyeDX - size * 0.06, browY - browTilt * size * 0.08);
+      ctx.lineTo(cx + eyeDX + size * 0.06, browY + browTilt * size * 0.08);
+      ctx.stroke();
 
-      <div class="m2k-text" lang="es" data-lang="es">
-        <p><strong>Página privada de replay.</strong></p>
-        <p>Esta página anima estados de ánimo para crear videos.</p>
-      </div>
+      const mouthY = cy + size * 0.12;
+      const mouthW = size * 0.26;
+      const curvature = lerp(-1, 1, t);
 
-      <div class="m2k-text" lang="it" data-lang="it">
-        <p><strong>Pagina replay privata.</strong></p>
-        <p>Questa pagina anima gli umori per creare video.</p>
-      </div>
+      ctx.beginPath();
+      ctx.moveTo(cx - mouthW, mouthY);
+      ctx.quadraticCurveTo(cx, mouthY + curvature * size * 0.12, cx + mouthW, mouthY);
+      ctx.strokeStyle = "rgba(0,0,0,0.70)";
+      ctx.lineWidth = Math.max(4, size * 0.05);
+      ctx.lineCap = "round";
+      ctx.stroke();
 
-      <div class="m2k-text" lang="de" data-lang="de">
-        <p><strong>Private Replay-Seite.</strong></p>
-        <p>Diese Seite animiert Stimmungen für kurze Videos.</p>
-      </div>
+      const img = ctx.getImageData(0, 0, size, size);
+      return { width: img.width, height: img.height, data: img.data };
+    }
 
-      <div class="m2k-text" lang="zh" data-lang="zh">
-        <p><strong>私密回放页面。</strong></p>
-        <p>此页面用于将情绪数据做成动画短视频。</p>
-      </div>
-    </details>
-  </section>
-</div>
-
-<script src="./maplibre-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-/* =============================================================================
-   0) MOBILE VIEWPORT FIX (iOS)
-   ============================================================================= */
-function setVh() {
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-}
-window.addEventListener('resize', setVh);
-setVh();
-
-/* =============================================================================
-   1) MAP SETUP
-   ============================================================================= */
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: [
-          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ],
-        tileSize: 256,
-        attribution: "© OpenStreetMap contributors"
+    function ensureMoodImages() {
+      for (let lvl = 0; lvl <= 10; lvl++) {
+        const name = `mood-${lvl}`;
+        if (!map.hasImage(name)) {
+          map.addImage(name, moodImageData(lvl, 96));
+        }
       }
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
-  },
-  center: [0, 20],
-  zoom: 2
-});
-map.addControl(new maplibregl.NavigationControl(), "top-right");
-
-/* =============================================================================
-   2) MOOD ICONS (0..10)
-   ============================================================================= */
-function lerp(a,b,t){ return a + (b - a) * t; }
-function lerpColor(c1,c2,t){
-  const r = Math.round(lerp(c1[0], c2[0], t));
-  const g = Math.round(lerp(c1[1], c2[1], t));
-  const b = Math.round(lerp(c1[2], c2[2], t));
-  return `rgb(${r},${g},${b})`;
-}
-function moodImageData(level, size=96){
-  const t = Math.max(0, Math.min(1, level/10));
-  const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
-  const fill = (t < 0.5)
-    ? lerpColor(red, yellow, t/0.5)
-    : lerpColor(yellow, green, (t-0.5)/0.5);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext("2d");
-
-  const cx = size/2, cy = size/2, r = size*0.42;
-
-  ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
-
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-  ctx.fillStyle = fill; ctx.fill();
-  ctx.lineWidth = Math.max(3, size*0.04);
-  ctx.strokeStyle = "rgba(0,0,0,0.25)";
-  ctx.stroke();
-
-  const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
-  ctx.beginPath();
-  ctx.arc(cx-eyeDX, eyeY, eyeR, 0, Math.PI*2);
-  ctx.arc(cx+eyeDX, eyeY, eyeR, 0, Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.75)";
-  ctx.fill();
-
-  const browY = eyeY - size*0.08;
-  const browTilt = lerp(0.20, -0.20, t);
-  ctx.lineWidth = Math.max(3, size*0.035);
-  ctx.strokeStyle="rgba(0,0,0,0.55)";
-  ctx.lineCap="round";
-
-  ctx.beginPath();
-  ctx.moveTo(cx-eyeDX-size*0.06, browY + browTilt*size*0.08);
-  ctx.lineTo(cx-eyeDX+size*0.06, browY - browTilt*size*0.08);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(cx+eyeDX-size*0.06, browY - browTilt*size*0.08);
-  ctx.lineTo(cx+eyeDX+size*0.06, browY + browTilt*size*0.08);
-  ctx.stroke();
-
-  const mouthY = cy + size*0.12, mouthW=size*0.26;
-  const curvature = lerp(-1, 1, t);
-  ctx.beginPath();
-  ctx.moveTo(cx-mouthW, mouthY);
-  ctx.quadraticCurveTo(cx, mouthY + curvature*size*0.12, cx+mouthW, mouthY);
-  ctx.strokeStyle="rgba(0,0,0,0.70)";
-  ctx.lineWidth=Math.max(4, size*0.05);
-  ctx.lineCap="round";
-  ctx.stroke();
-
-  const img = ctx.getImageData(0,0,size,size);
-  return { width: img.width, height: img.height, data: img.data };
-}
-function ensureMoodImages(){
-  for(let lvl=0; lvl<=10; lvl++){
-    const name = `mood-${lvl}`;
-    if(!map.hasImage(name)) map.addImage(name, moodImageData(lvl,96));
-  }
-}
-
-/* =============================================================================
-   3) POINTS SOURCE + LAYERS
-   ============================================================================= */
-function initPointsSourceAndLayers(){
-  if(map.getSource("points")) return;
-
-  map.addSource("points", {
-    type: "geojson",
-    data: { type:"FeatureCollection", features: [] },
-    cluster: true,
-    clusterRadius: 60,
-    clusterMaxZoom: 14,
-    clusterProperties: { sum: ["+", ["get", "value"]], count: ["+", 1] }
-  });
-
-  const avgRoundedClamped = [
-    "case",
-    ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
-    [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
-    ["round", ["/", ["get","sum"], ["get","count"]]]
-  ];
-
-  map.addLayer({
-    id: "clusters-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["has", "point_count"],
-    layout: {
-      "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
-      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
-      "icon-allow-overlap": true,
-      "text-field": ["to-string", ["get","point_count"]],
-      "text-size": 12,
-      "text-offset": [0, 1.55],
-      "text-allow-overlap": true,
-      "text-anchor": "top"
-    },
-    paint: {
-      "text-color": "rgba(0,0,0,0.75)",
-      "text-halo-color": "rgba(255,255,255,0.9)",
-      "text-halo-width": 1
     }
-  });
 
-  map.addLayer({
-    id: "points-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["!", ["has", "point_count"]],
-    layout: {
-      "icon-image": [
-        "concat","mood-",
-        ["to-string",
-          ["case",
-            ["<", ["round", ["get","value"]], 0], 0,
-            [">", ["round", ["get","value"]], 10], 10,
-            ["round", ["get","value"]]
-          ]
-        ]
-      ],
-      "icon-size": 0.55,
-      "icon-allow-overlap": true
+    /* =========================================================================
+       3) POINTS SOURCE + LAYERS
+       ========================================================================= */
+    function initPointsSourceAndLayers() {
+      if (map.getSource("points")) return;
+
+      map.addSource("points", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+        cluster: true,
+        clusterRadius: 60,
+        clusterMaxZoom: 14,
+        clusterProperties: {
+          sum: ["+", ["get", "value"]],
+          count: ["+", 1]
+        }
+      });
+
+      const avgRoundedClamped = [
+        "case",
+        ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
+        [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
+        ["round", ["/", ["get","sum"], ["get","count"]]]
+      ];
+
+      map.addLayer({
+        id: "clusters-mood",
+        type: "symbol",
+        source: "points",
+        filter: ["has", "point_count"],
+        layout: {
+          "icon-image": ["concat", "mood-", ["to-string", avgRoundedClamped]],
+          "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
+          "icon-allow-overlap": true,
+          "text-field": ["to-string", ["get","point_count"]],
+          "text-size": 12,
+          "text-offset": [0, 1.55],
+          "text-allow-overlap": true,
+          "text-anchor": "top"
+        },
+        paint: {
+          "text-color": "rgba(0,0,0,0.75)",
+          "text-halo-color": "rgba(255,255,255,0.9)",
+          "text-halo-width": 1
+        }
+      });
+
+      map.addLayer({
+        id: "points-mood",
+        type: "symbol",
+        source: "points",
+        filter: ["!", ["has", "point_count"]],
+        layout: {
+          "icon-image": [
+            "concat", "mood-",
+            ["to-string",
+              ["case",
+                ["<", ["round", ["get","value"]], 0], 0,
+                [">", ["round", ["get","value"]], 10], 10,
+                ["round", ["get","value"]]
+              ]
+            ]
+          ],
+          "icon-size": 0.55,
+          "icon-allow-overlap": true
+        }
+      });
+
+      map.on("click", "clusters-mood", (e) => {
+        const f = e.features[0];
+        map.getSource("points").getClusterExpansionZoom(
+          f.properties.cluster_id,
+          (err, zoom) => {
+            if (err) return;
+            map.easeTo({ center: f.geometry.coordinates, zoom });
+          }
+        );
+      });
+
+      map.on("mouseenter", "clusters-mood", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
+      map.on("mouseleave", "clusters-mood", () => {
+        map.getCanvas().style.cursor = "";
+      });
     }
-  });
 
-  map.on("click", "clusters-mood", (e) => {
-    const f = e.features[0];
-    map.getSource("points").getClusterExpansionZoom(
-      f.properties.cluster_id,
-      (err, zoom) => {
-        if (err) return;
-        map.easeTo({ center: f.geometry.coordinates, zoom });
+    /* =========================================================================
+       4) SUPABASE CONFIG
+       ========================================================================= */
+    const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // remplace par ta vraie clé complète
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    /* =========================================================================
+       5) REPLAY CONFIG
+       ========================================================================= */
+    const REPLAY_DURATION_SEC = 20;
+    const MAX_POINTS = 20000;
+    const START_FROM_UTC = "2026-02-01T00:00:00.000Z";
+
+    let rows = [];
+    let feats = [];
+    let t0 = 0;
+    let t1 = 0;
+    let span = 1;
+
+    let playing = false;
+    let raf = null;
+    let startedAt = 0;
+
+    let lastFlyAt = 0;
+    let lastFlyLngLat = null;
+    let lastCameraCount = 0;
+
+    /* =========================================================================
+       6) HELPERS
+       ========================================================================= */
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function haversineKm(a, b) {
+      const toRad = (x) => x * Math.PI / 180;
+      const R = 6371;
+      const dLat = toRad(b[1] - a[1]);
+      const dLon = toRad(b[0] - a[0]);
+      const lat1 = toRad(a[1]);
+      const lat2 = toRad(b[1]);
+      const s =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    }
+
+    function toFeature(r) {
+      return {
+        type: "Feature",
+        properties: {
+          value: Number(r.mood),
+          t: new Date(r.created_at).getTime()
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [Number(r.lon), Number(r.lat)]
+        }
+      };
+    }
+
+    function setSourceCount(n) {
+      const src = map.getSource("points");
+      if (!src) return;
+      src.setData({
+        type: "FeatureCollection",
+        features: feats.slice(0, n)
+      });
+    }
+
+    /* =========================================================================
+       7) WOW CAMERA
+       ========================================================================= */
+    function maybeFlyTo(count) {
+      const now = performance.now();
+
+      if (count < 2) return;
+      if (count === lastCameraCount) return;
+
+      const minInterval = 1400;
+      if (now - lastFlyAt < minInterval) return;
+
+      const r = rows[count - 1];
+      if (!r) return;
+
+      const target = [Number(r.lon), Number(r.lat)];
+
+      if (lastFlyLngLat) {
+        const d = haversineKm(lastFlyLngLat, target);
+        if (d < 600) return;
       }
-    );
-  });
 
-  map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
-}
+      lastFlyAt = now;
+      lastFlyLngLat = target;
+      lastCameraCount = count;
 
-/* =============================================================================
-   4) UI HELPERS
-   ============================================================================= */
-const el = (id) => document.getElementById(id);
-const panel = el("panel");
-function setMsg(s){ el("appMsg").textContent = s || ""; }
+      const zoomBase = 4.15;
+      const zoomJitter = ((count % 5) * 0.12);
+      const pitch = 35 + ((count % 3) * 4);
+      const bearing = ((count * 23) % 80) - 40;
 
-let dragging = false;
-let dragOffX = 0, dragOffY = 0;
-const dragHandle = el("dragHandle");
-dragHandle.addEventListener("pointerdown", (e) => {
-  dragging = true;
-  panel.setPointerCapture(e.pointerId);
-  const rect = panel.getBoundingClientRect();
-  dragOffX = e.clientX - rect.left;
-  dragOffY = e.clientY - rect.top;
-});
-panel.addEventListener("pointermove", (e) => {
-  if (!dragging) return;
-  let x = e.clientX - dragOffX;
-  let y = e.clientY - dragOffY;
-  const maxX = window.innerWidth - panel.offsetWidth - 8;
-  const maxY = window.innerHeight - panel.offsetHeight - 8;
-  x = Math.max(8, Math.min(maxX, x));
-  y = Math.max(8, Math.min(maxY, y));
-  panel.style.left = x + "px";
-  panel.style.top  = y + "px";
-  panel.style.right = "auto";
-  panel.style.bottom = "auto";
-});
-panel.addEventListener("pointerup", () => { dragging = false; });
-panel.addEventListener("pointercancel", () => { dragging = false; });
-
-/* =============================================================================
-   5) SUPABASE CONFIG
-   ============================================================================= */
-const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // ✅ put your full anon key here
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* =============================================================================
-   6) TOP STATS (COUNT rows + avg today)
-   ============================================================================= */
-function fmtInt(n){
-  try { return new Intl.NumberFormat().format(n); }
-  catch { return String(n); }
-}
-async function updateTopStats(){
-  const elTotal = el("statTotal");
-  const elAvg   = el("statAvgToday");
-  if (!elTotal || !elAvg) return;
-
-  try{
-    const { count, error } = await sb
-      .from("mood_entries")
-      .select("*", { count: "exact", head: true });
-    if (!error && typeof count === "number") elTotal.textContent = fmtInt(count);
-    else elTotal.textContent = "—";
-  }catch{ elTotal.textContent = "—"; }
-
-  try{
-    const startUTC = new Date();
-    startUTC.setUTCHours(0,0,0,0);
-    const iso = startUTC.toISOString();
-
-    const { data, error } = await sb
-      .from("mood_entries")
-      .select("mood, created_at")
-      .gte("created_at", iso)
-      .limit(50000);
-
-    if (error || !data || data.length === 0) { elAvg.textContent = "—"; return; }
-
-    let sum = 0, n = 0;
-    for (const r of data){
-      const v = Number(r.mood);
-      if (Number.isFinite(v)) { sum += v; n++; }
+      map.flyTo({
+        center: target,
+        zoom: zoomBase + zoomJitter,
+        bearing,
+        pitch,
+        speed: 0.48,
+        curve: 1.1,
+        essential: true,
+        easing: (t) => t * (2 - t)
+      });
     }
-    elAvg.textContent = n ? (sum / n).toFixed(1) : "—";
-  }catch{ elAvg.textContent = "—"; }
-}
 
-/* =============================================================================
-   7) REPLAY ENGINE (uses mood_entries)
-   ============================================================================= */
-let rows = [];
-let feats = [];
-let t0 = 0, t1 = 0, span = 1;
+    function resetCameraState() {
+      lastFlyAt = 0;
+      lastFlyLngLat = null;
+      lastCameraCount = 0;
 
-let playing = false;
-let raf = null;
-let startedAt = 0;
-let baseProgress = 0;     // 0..1
-let lastCount = 0;
-
-let runningSum = 0;
-let runningCount = 0;
-
-let lastFlyAt = 0;
-let lastFlyLngLat = null;
-
-function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-function isoShort(ms){
-  const d = new Date(ms);
-  return d.toISOString().slice(0,19).replace("T"," ");
-}
-function haversineKm(a,b){
-  const toRad = (x)=> x*Math.PI/180;
-  const R=6371;
-  const dLat = toRad(b[1]-a[1]);
-  const dLon = toRad(b[0]-a[0]);
-  const lat1 = toRad(a[1]);
-  const lat2 = toRad(b[1]);
-  const s = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
-function toFeature(r){
-  return {
-    type:"Feature",
-    properties:{ value:Number(r.mood), t:new Date(r.created_at).getTime() },
-    geometry:{ type:"Point", coordinates:[Number(r.lon), Number(r.lat)] }
-  };
-}
-function setSourceCount(n){
-  const src = map.getSource("points");
-  if (!src) return;
-  src.setData({ type:"FeatureCollection", features: feats.slice(0,n) });
-}
-
-function setPanelReplayMin(on){
-  if (on) panel.className = "panel-replay-min";
-  else panel.className = "panel-app";
-}
-
-function updateHUD(timeMs, count){
-  el("hudTime").textContent = isoShort(timeMs);
-  el("hudCount").textContent = String(count);
-  const avg = count ? (runningSum / runningCount) : NaN;
-  el("hudAvg").textContent = Number.isFinite(avg) ? avg.toFixed(1) : "—";
-}
-
-function maybeFlyTo(count){
-  const mode = el("cameraMode").value;
-  if (mode === "off") return;
-
-  const now = performance.now();
-  const minInterval = (mode === "calm") ? 2600 : 1400;
-  if (now - lastFlyAt < minInterval) return;
-  if (count < 2) return;
-
-  const r = rows[count - 1];
-  const target = [r.lon, r.lat];
-
-  if (lastFlyLngLat) {
-    const d = haversineKm(lastFlyLngLat, target);
-    const threshold = (mode === "calm") ? 900 : 600;
-    if (d < threshold) return;
-  }
-
-  lastFlyAt = now;
-  lastFlyLngLat = target;
-
-  const z = (mode === "calm") ? 3.6 : 4.15;
-  const pitch = (mode === "calm") ? 0 : 35;
-
-  map.flyTo({
-    center: target,
-    zoom: z,
-    speed: (mode === "calm") ? 0.8 : 1.05,
-    curve: 1.25,
-    easing: (t)=> t*(2-t),
-    pitch
-  });
-}
-
-function computeCountForTime(targetTimeMs){
-  while (lastCount < rows.length && new Date(rows[lastCount].created_at).getTime() <= targetTimeMs) {
-    const m = Number(rows[lastCount].mood);
-    if (Number.isFinite(m)) { runningSum += m; runningCount += 1; }
-    lastCount++;
-  }
-  return lastCount;
-}
-function recomputeUpToCount(n){
-  runningSum = 0; runningCount = 0;
-  for(let i=0;i<n;i++){
-    const m = Number(rows[i].mood);
-    if (Number.isFinite(m)) { runningSum += m; runningCount += 1; }
-  }
-}
-
-function renderAtProgress(p){
-  p = clamp(p, 0, 1);
-  const targetTime = t0 + p * span;
-
-  if (p < baseProgress) {
-    lastCount = 0;
-    runningSum = 0;
-    runningCount = 0;
-  }
-  baseProgress = p;
-
-  const count = computeCountForTime(targetTime);
-  if (runningCount !== count) recomputeUpToCount(count);
-
-  setSourceCount(count);
-  updateHUD(targetTime, count);
-
-  const v = Math.round(p * 1000);
-  if (Number(el("scrub").value) !== v) el("scrub").value = String(v);
-
-  maybeFlyTo(count);
-}
-
-function play(){
-  if (!rows.length) return;
-  if (playing) return;
-  playing = true;
-
-  // ✅ shrink panel ONLY when play starts
-  setPanelReplayMin(true);
-
-  el("btnPlay").textContent = "⏸ Pause";
-  setMsg("");
-
-  const durationSec = Number(el("dur").value || 12);
-  const speed = Number(el("speed").value || 1);
-
-  startedAt = performance.now();
-  const startP = baseProgress;
-
-  function step(now){
-    if (!playing) return;
-    const elapsed = (now - startedAt) / 1000;
-    const p = startP + (elapsed / durationSec) * speed;
-
-    if (p >= 1){
-      renderAtProgress(1);
-      pause(); // ends in minimal (nice for capture)
-      return;
+      map.jumpTo({
+        center: [0, 20],
+        zoom: 2,
+        bearing: 0,
+        pitch: 0
+      });
     }
-    renderAtProgress(p);
-    raf = requestAnimationFrame(step);
-  }
-  raf = requestAnimationFrame(step);
-}
 
-function pause(){
-  playing = false;
-  if (raf) cancelAnimationFrame(raf);
-  raf = null;
-  el("btnPlay").textContent = "▶ Play";
-}
+    /* =========================================================================
+       8) RENDER
+       ========================================================================= */
+    function renderAtProgress(p) {
+      p = clamp(p, 0, 1);
+      const targetTime = t0 + p * span;
 
-function reset(){
-  pause();
-  baseProgress = 0;
-  lastCount = 0;
-  runningSum = 0;
-  runningCount = 0;
-  lastFlyAt = 0;
-  lastFlyLngLat = null;
+      let count = 0;
+      while (
+        count < rows.length &&
+        new Date(rows[count].created_at).getTime() <= targetTime
+      ) {
+        count++;
+      }
 
-  setSourceCount(0);
-  updateHUD(t0, 0);
-  el("scrub").value = "0";
-
-  // ✅ back to full start panel
-  setPanelReplayMin(false);
-
-  map.easeTo({ center:[0,20], zoom:2, pitch:0 });
-  setMsg("Ready.");
-}
-
-async function loadRows(){
-  const limit = Number(el("limit").value || 20000);
-  setMsg("Loading database…");
-
-  const { data, error } = await sb
-    .from("mood_entries")
-    .select("mood, lon, lat, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.warn(error);
-    setMsg("DB load failed: " + (error.message || "Unknown error"));
-    return [];
-  }
-
-  const cleaned = (data || []).filter(r =>
-    typeof r.lon === "number" && typeof r.lat === "number" && r.created_at
-  );
-
-  // chronological
-  cleaned.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-  setMsg(cleaned.length ? `Loaded ${cleaned.length} moods.` : "No moods found.");
-  return cleaned;
-}
-
-async function bootReplay(){
-  rows = await loadRows();
-  feats = rows.map(toFeature);
-
-  if (!rows.length) return;
-
-  t0 = new Date(rows[0].created_at).getTime();
-  t1 = new Date(rows[rows.length-1].created_at).getTime();
-  span = Math.max(1, t1 - t0);
-
-  updateHUD(t0, 0);
-  reset();
-}
-
-/* =============================================================================
-   8) EVENTS
-   ============================================================================= */
-el("btnPlay").addEventListener("click", () => playing ? pause() : play());
-el("btnReset").addEventListener("click", reset);
-
-el("scrub").addEventListener("input", (e) => {
-  const v = Number(e.target.value || 0);
-  pause();
-  // keep full panel while scrubbing (nice to set start), but if you want minimal: remove next line
-  setPanelReplayMin(false);
-  renderAtProgress(v / 1000);
-});
-
-el("dur").addEventListener("change", () => { if (playing) { pause(); play(); } });
-el("speed").addEventListener("change", () => { if (playing) { pause(); play(); } });
-el("limit").addEventListener("change", async () => { await bootReplay(); });
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === " ") { e.preventDefault(); playing ? pause() : play(); }
-  if (e.key === "r" || e.key === "R") reset();
-  if (e.key === "h" || e.key === "H") {
-    const hidden = panel.style.opacity === "0";
-    panel.style.opacity = hidden ? "1" : "0";
-    panel.style.pointerEvents = hidden ? "auto" : "none";
-  }
-});
-
-/* =============================================================================
-   9) INIT
-   ============================================================================= */
-map.on("load", async () => {
-  ensureMoodImages();
-  initPointsSourceAndLayers();
-
-  await updateTopStats();
-  await bootReplay();
-});
-</script>
-
-<!-- ✅ Language switcher (kept) -->
-<script>
-(function () {
-  const blocks = Array.from(document.querySelectorAll('.m2k-text[data-lang]'));
-  const summaryLabel = document.querySelector('[data-i18n="summary"]');
-  const buttons = Array.from(document.querySelectorAll('.m2k-lang-btn[data-set-lang]'));
-
-  function pickDefaultLang() {
-    const saved = localStorage.getItem('m2k_lang');
-    return saved || 'en';
-  }
-
-  function setLang(lang) {
-    blocks.forEach(el => el.style.display = (el.dataset.lang === lang ? 'block' : 'none'));
-    if (summaryLabel) {
-      const titles = { en:'Why Mood2Know?', fr:'Pourquoi Mood2Know ?', es:'¿Por qué Mood2Know?', it:'Perché Mood2Know?', de:'Warum Mood2Know?', zh:'为什么选择 Mood2Know？' };
-      summaryLabel.textContent = titles[lang] || titles.en;
+      setSourceCount(count);
+      maybeFlyTo(count);
     }
-    buttons.forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.setLang === lang ? 'true' : 'false'));
-    localStorage.setItem('m2k_lang', lang);
-  }
 
-  buttons.forEach(btn => btn.addEventListener('click', () => setLang(btn.dataset.setLang)));
-  setLang(pickDefaultLang());
-})();
-</script>
+    /* =========================================================================
+       9) PLAYBACK
+       ========================================================================= */
+    function play() {
+      if (!rows.length || playing) return;
 
+      playing = true;
+      startedAt = performance.now();
+
+      function step(now) {
+        if (!playing) return;
+
+        const elapsed = (now - startedAt) / 1000;
+        const loopProgress = (elapsed / REPLAY_DURATION_SEC) % 1;
+
+        renderAtProgress(loopProgress);
+        raf = requestAnimationFrame(step);
+      }
+
+      raf = requestAnimationFrame(step);
+    }
+
+    function pause() {
+      playing = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+    }
+
+    /* =========================================================================
+       10) LOAD DATA
+       ========================================================================= */
+    async function loadRows() {
+      const { data, error } = await sb
+        .from("mood_entries")
+        .select("mood, lon, lat, created_at")
+        .gte("created_at", START_FROM_UTC)
+        .order("created_at", { ascending: true })
+        .limit(MAX_POINTS);
+
+      if (error) {
+        console.error("DB load failed:", error);
+        return [];
+      }
+
+      const cleaned = (data || []).filter(r =>
+        typeof r.lon === "number" &&
+        typeof r.lat === "number" &&
+        r.created_at
+      );
+
+      return cleaned;
+    }
+
+    async function bootReplay() {
+      rows = await loadRows();
+      feats = rows.map(toFeature);
+
+      if (!rows.length) {
+        console.warn("No moods found from", START_FROM_UTC);
+        return;
+      }
+
+      t0 = new Date(rows[0].created_at).getTime();
+      t1 = new Date(rows[rows.length - 1].created_at).getTime();
+      span = Math.max(1, t1 - t0);
+
+      setSourceCount(0);
+      resetCameraState();
+      play();
+    }
+
+    /* =========================================================================
+       11) TAB VISIBILITY
+       ========================================================================= */
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        pause();
+      } else {
+        resetCameraState();
+        play();
+      }
+    });
+
+    /* =========================================================================
+       12) INIT
+       ========================================================================= */
+    map.on("load", async () => {
+      ensureMoodImages();
+      initPointsSourceAndLayers();
+      await bootReplay();
+    });
+  </script>
 </body>
 </html>
