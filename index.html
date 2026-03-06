@@ -39,7 +39,6 @@
     z-index: 0;
   }
 
-  /* NEW: animated intro background layer */
   #introBg{
     position: fixed;
     inset: 0;
@@ -707,81 +706,185 @@ function ensureMoodImages(){
   }
 }
 
+const TILE_SIZE_METERS = 300;
+const EARTH_RADIUS = 6378137;
+const MAX_LAT = 85.05112878;
+
+function clampLat(lat){
+  return Math.max(-MAX_LAT, Math.min(MAX_LAT, lat));
+}
+
+function lngLatToMercator(lon, lat){
+  const clampedLat = clampLat(lat);
+  const x = EARTH_RADIUS * lon * Math.PI / 180;
+  const y = EARTH_RADIUS * Math.log(Math.tan(Math.PI / 4 + (clampedLat * Math.PI / 180) / 2));
+  return { x, y };
+}
+
+function mercatorToLngLat(x, y){
+  const lon = (x / EARTH_RADIUS) * 180 / Math.PI;
+  const lat = (2 * Math.atan(Math.exp(y / EARTH_RADIUS)) - Math.PI / 2) * 180 / Math.PI;
+  return { lon, lat };
+}
+
+function tileColor(avgMood){
+  return moodFillColor(avgMood);
+}
+
+function buildGridGeoJSON(rows, cellSizeMeters = TILE_SIZE_METERS){
+  const buckets = new Map();
+
+  for (const r of rows || []){
+    const lon = Number(r.lon);
+    const lat = Number(r.lat);
+    const mood = Number(r.mood);
+
+    if (!Number.isFinite(lon) || !Number.isFinite(lat) || !Number.isFinite(mood)) continue;
+
+    const m = lngLatToMercator(lon, lat);
+    const cellX = Math.floor(m.x / cellSizeMeters);
+    const cellY = Math.floor(m.y / cellSizeMeters);
+    const key = `${cellX}:${cellY}`;
+
+    let bucket = buckets.get(key);
+    if (!bucket){
+      bucket = { cellX, cellY, sum: 0, count: 0 };
+      buckets.set(key, bucket);
+    }
+
+    bucket.sum += mood;
+    bucket.count += 1;
+  }
+
+  const features = [];
+
+  for (const bucket of buckets.values()){
+    const avg = bucket.sum / bucket.count;
+
+    const x0 = bucket.cellX * cellSizeMeters;
+    const y0 = bucket.cellY * cellSizeMeters;
+    const x1 = x0 + cellSizeMeters;
+    const y1 = y0 + cellSizeMeters;
+
+    const p1 = mercatorToLngLat(x0, y0);
+    const p2 = mercatorToLngLat(x1, y0);
+    const p3 = mercatorToLngLat(x1, y1);
+    const p4 = mercatorToLngLat(x0, y1);
+
+    features.push({
+      type: "Feature",
+      properties: {
+        avgMood: Number(avg.toFixed(2)),
+        count: bucket.count,
+        color: tileColor(avg)
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [p1.lon, p1.lat],
+          [p2.lon, p2.lat],
+          [p3.lon, p3.lat],
+          [p4.lon, p4.lat],
+          [p1.lon, p1.lat]
+        ]]
+      }
+    });
+  }
+
+  return {
+    type: "FeatureCollection",
+    features
+  };
+}
+
 function initPointsSourceAndLayers(){
   if(map.getSource("points")) return;
 
   map.addSource("points", {
     type: "geojson",
-    data: { type:"FeatureCollection", features: [] },
-    cluster: true,
-    clusterRadius: 60,
-    clusterMaxZoom: 14,
-    clusterProperties: { sum: ["+", ["get", "value"]], count: ["+", 1] }
+    data: { type:"FeatureCollection", features: [] }
   });
 
-  const avgRoundedClamped = [
-    "case",
-    ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
-    [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
-    ["round", ["/", ["get","sum"], ["get","count"]]]
-  ];
+  map.addLayer({
+    id: "tiles-fill",
+    type: "fill",
+    source: "points",
+    paint: {
+      "fill-color": ["get", "color"],
+      "fill-opacity": [
+        "interpolate",
+        ["linear"],
+        ["get", "count"],
+        1, 0.28,
+        3, 0.38,
+        8, 0.50,
+        20, 0.64
+      ]
+    }
+  });
 
   map.addLayer({
-    id: "clusters-mood",
+    id: "tiles-outline",
+    type: "line",
+    source: "points",
+    paint: {
+      "line-color": "rgba(0,0,0,0.18)",
+      "line-width": 1
+    }
+  });
+
+  map.addLayer({
+    id: "tiles-label",
     type: "symbol",
     source: "points",
-    filter: ["has", "point_count"],
+    minzoom: 4,
     layout: {
-      "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
-      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
-      "icon-allow-overlap": true,
-      "text-field": ["to-string", ["get","point_count"]],
-      "text-size": 12,
-      "text-offset": [0, 1.55],
-      "text-allow-overlap": true,
-      "text-anchor": "top"
+      "text-field": [
+        "format",
+        ["to-string", ["get", "avgMood"]],
+        { "font-scale": 1.0 },
+        "\n",
+        {},
+        ["concat", ["to-string", ["get", "count"]], " mood(s)"],
+        { "font-scale": 0.8 }
+      ],
+      "text-size": 11,
+      "text-anchor": "center",
+      "text-allow-overlap": false
     },
     paint: {
-      "text-color": "rgba(0,0,0,0.75)",
+      "text-color": "rgba(0,0,0,0.82)",
       "text-halo-color": "rgba(255,255,255,0.9)",
-      "text-halo-width": 1
+      "text-halo-width": 1.2
     }
   });
 
-  map.addLayer({
-    id: "points-mood",
-    type: "symbol",
-    source: "points",
-    filter: ["!", ["has", "point_count"]],
-    layout: {
-      "icon-image": [
-        "concat","mood-",
-        ["to-string",
-          ["case",
-            ["<", ["round", ["get","value"]], 0], 0,
-            [">", ["round", ["get","value"]], 10], 10,
-            ["round", ["get","value"]]
-          ]
-        ]
-      ],
-      "icon-size": 0.55,
-      "icon-allow-overlap": true
-    }
+  map.on("mouseenter", "tiles-fill", () => {
+    map.getCanvas().style.cursor = "pointer";
   });
 
-  map.on("click", "clusters-mood", (e) => {
-    const f = e.features[0];
-    map.getSource("points").getClusterExpansionZoom(
-      f.properties.cluster_id,
-      (err, zoom) => {
-        if (err) return;
-        map.easeTo({ center: f.geometry.coordinates, zoom });
-      }
-    );
+  map.on("mouseleave", "tiles-fill", () => {
+    map.getCanvas().style.cursor = "";
   });
 
-  map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
+  map.on("click", "tiles-fill", (e) => {
+    const f = e.features && e.features[0];
+    if (!f) return;
+
+    const avg = f.properties?.avgMood;
+    const count = f.properties?.count;
+
+    new maplibregl.Popup({ closeButton: true, closeOnClick: true })
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <div style="font:14px system-ui;">
+          <div><b>Average mood:</b> ${avg}</div>
+          <div><b>Responses in tile:</b> ${count}</div>
+          <div style="margin-top:6px; opacity:.7;">Tile size: ~${TILE_SIZE_METERS} m</div>
+        </div>
+      `)
+      .addTo(map);
+  });
 }
 
 function clearMarkers(){
@@ -810,15 +913,8 @@ async function refreshPoints(){
     return;
   }
 
-  const features = (data || [])
-    .filter(r => typeof r.lon==="number" && typeof r.lat==="number")
-    .map(r => ({
-      type: "Feature",
-      properties: { value: r.mood },
-      geometry: { type:"Point", coordinates:[r.lon, r.lat] }
-    }));
-
-  source.setData({ type:"FeatureCollection", features });
+  const geojson = buildGridGeoJSON(data || [], TILE_SIZE_METERS);
+  source.setData(geojson);
 }
 
 const el = id => document.getElementById(id);
@@ -850,7 +946,6 @@ function showManualButton(show){
   btn.style.display = show ? "block" : "none";
 }
 
-/* NEW */
 function setIntroBackground(visible){
   const bg = document.getElementById("introBg");
   if (!bg) return;
