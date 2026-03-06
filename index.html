@@ -1654,27 +1654,6 @@ async function saveMoodAtCoords(coords) {
   return true;
 }
 
-  saveLastLoc(coords);
-
-  fadeOutMusic(2.6);
-  revealedThisSession = true;
-  setIntroBackground(false);
-
-  collapseAbout();
-
-  setAppMessage("Thank you! Loading the world’s mood…");
-  map.easeTo({ center: [coords.lon, coords.lat], zoom: Math.max(map.getZoom(), 8) });
-
-  setTimeout(async () => {
-    await refreshPoints();
-    updateTopStats();
-    updateHappiestCountryToday();
-    updateTrend();
-    showCompact("✅ Saved. Thank you!");
-  }, 700);
-
-  return true;
-}
 
 async function autoSaveWithGeoOrManual(){
   const now = Date.now();
