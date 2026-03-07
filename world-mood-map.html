@@ -4,76 +4,117 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>World Mood Map — A real-time map of global emotions | Mood2Know</title>
+<title>World Mood Map in Real Time | Mood2Know</title>
 
-<meta name="description" content="Explore a world mood map built from anonymous signals. Mood2Know lets people share their mood in one click and reveals the global emotional landscape in real time.">
+<meta name="description" content="Explore a live world mood map built from anonymous mood signals. Mood2Know reveals the global mood score, mood history, and the happiest country in real time.">
 
 <link rel="canonical" href="https://mood2know.com/world-mood-map.html">
 
-<meta name="robots" content="index,follow">
+<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
 
-<meta property="og:title" content="World Mood Map — explore global emotions">
-<meta property="og:description" content="A real-time world mood map built from anonymous signals.">
+<meta property="og:title" content="World Mood Map — explore global emotions in real time">
+<meta property="og:description" content="A live world mood map built from anonymous mood signals, with global score, mood history, and the happiest country.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://mood2know.com/world-mood-map.html">
 <meta property="og:image" content="https://mood2know.com/og.jpg">
+<meta property="og:site_name" content="Mood2Know">
 
-<!-- AJOUT TWITTER -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="World Mood Map — explore global emotions">
-<meta name="twitter:description" content="A real-time map showing how people feel across the world.">
+<meta name="twitter:title" content="World Mood Map — explore global emotions in real time">
+<meta name="twitter:description" content="A live map showing how people feel across the world, with global score, mood history, and happiest country.">
 <meta name="twitter:image" content="https://mood2know.com/og.jpg">
 
 <style>
+:root { color-scheme: light; }
+
 body{
-font:16px system-ui;
-margin:0;
-line-height:1.6;
-background:#fff;
-color:#111;
+  margin:0;
+  font:16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  line-height:1.6;
+  background:#fff;
+  color:#111;
 }
 
 main{
-max-width:860px;
-margin:auto;
-padding:30px 20px;
+  max-width:860px;
+  margin:auto;
+  padding:30px 20px 40px;
 }
 
 h1{
-font-size:34px;
-letter-spacing:-0.02em;
+  font-size:34px;
+  line-height:1.15;
+  letter-spacing:-0.02em;
+  margin-bottom:12px;
 }
 
 h2{
-margin-top:32px;
-font-size:20px;
+  margin-top:30px;
+  margin-bottom:10px;
+  font-size:20px;
+  letter-spacing:-0.01em;
+}
+
+.sub{
+  font-size:18px;
+  opacity:.86;
+}
+
+.cta{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:18px 0 8px;
 }
 
 a.button{
-display:inline-block;
-margin-top:16px;
-padding:12px 16px;
-border-radius:12px;
-background:#111;
-color:#fff;
-text-decoration:none;
-font-weight:600;
+  display:inline-block;
+  padding:12px 16px;
+  border-radius:12px;
+  text-decoration:none;
+  font-weight:600;
+  border:1px solid rgba(0,0,0,.12);
+}
+
+a.primary{
+  background:#111;
+  color:#fff;
+  border-color:#111;
+}
+
+a.secondary{
+  background:#fff;
+  color:#111;
+}
+
+hr{
+  border:0;
+  border-top:1px solid rgba(0,0,0,.10);
+  margin:28px 0;
+}
+
+ul{
+  padding-left:18px;
+}
+
+.note{
+  font-size:13px;
+  opacity:.75;
 }
 </style>
 
-<!-- AJOUT JSON-LD -->
 <script type="application/ld+json">
 {
- "@context":"https://schema.org",
- "@type":"WebPage",
- "name":"World Mood Map — Mood2Know",
- "url":"https://mood2know.com/world-mood-map.html",
- "description":"Mood2Know is a world mood map where people can share their mood anonymously and visualize global emotional patterns in real time.",
- "isPartOf":{
-   "@type":"WebSite",
-   "name":"Mood2Know",
-   "url":"https://mood2know.com/"
- }
+  "@context":"https://schema.org",
+  "@type":"WebPage",
+  "name":"World Mood Map — Mood2Know",
+  "url":"https://mood2know.com/world-mood-map.html",
+  "description":"Mood2Know is a live world mood map where people share their mood anonymously and explore global emotional patterns, a world mood score, mood history, and the happiest country in real time.",
+  "isPartOf":{
+    "@type":"WebSite",
+    "name":"Mood2Know",
+    "url":"https://mood2know.com/"
+  }
 }
 </script>
 
@@ -83,67 +124,103 @@ font-weight:600;
 
 <main>
 
-<h1>World Mood Map</h1>
+<h1>World Mood Map: a live map of global emotions</h1>
 
-<p>
-A <strong>world mood map</strong> is a way to visualize how people feel across the planet at a given moment.  
-Mood2Know collects simple anonymous mood signals and turns them into a live global emotional landscape.
+<p class="sub">
+Mood2Know is a <strong>world mood map</strong> that turns simple anonymous mood signals into a live emotional landscape.
+In one click, people can share how they feel and explore how mood patterns appear across regions, countries, and time zones.
 </p>
 
-<p>
-Instead of long surveys or social media analysis, the idea is intentionally minimal: one question, one click, one moment captured.
+<div class="cta">
+  <a class="button primary" href="https://mood2know.com/">Open the world mood map</a>
+  <a class="button secondary" href="/emotional-weather-map.html">Read about the concept</a>
+</div>
+
+<p class="note">
+The map can be explored even before sharing a mood.
 </p>
 
-<a class="button" href="https://mood2know.com/">Open the world mood map</a>
+<hr>
 
 <h2>How the world mood map works</h2>
 
 <p>
-Participants choose a mood between 0 and 10.  
-Their device provides a location, and the data point is placed on the map.
+Mood2Know is intentionally simple. Participants choose a mood from 0 to 10 and place it on the map using automatic or manual location.
+That signal is stored anonymously and becomes part of a broader collective emotional view.
 </p>
 
 <p>
-Each point represents a momentary emotional signal.  
-Clusters reveal patterns across cities, countries and time zones.
+Instead of relying on long surveys, social media feeds, or personal storytelling, the project captures a direct and minimal input:
+one mood, one place, one moment.
 </p>
+
+<h2>What you can see on the map</h2>
+
+<p>
+The experience now goes beyond isolated markers. Mood2Know helps users explore several live indicators of the collective mood:
+</p>
+
+<ul>
+  <li><strong>Live world mood map</strong> with clustered emotional signals.</li>
+  <li><strong>Global mood score</strong> showing the current average mood.</li>
+  <li><strong>Happiest country</strong> based on current visible mood patterns.</li>
+  <li><strong>Mood history</strong> showing how shared emotions evolve over time.</li>
+  <li><strong>Share options</strong> that make it easier to spread the project.</li>
+</ul>
 
 <h2>A global emotional snapshot</h2>
 
 <p>
-Emotions are usually invisible at a collective scale.  
-A world mood map allows us to observe them the same way we observe weather patterns.
+Emotions are usually experienced privately and remain difficult to observe at a large scale.
+A world mood map offers another perspective: it reveals a moving collective signal, almost like emotional weather.
 </p>
 
 <p>
-Some regions may appear calmer or more positive, while others show more mixed emotional signals.  
-Over time, the map evolves as new moods are shared.
+Some areas may look calmer, more positive, or more mixed than others.
+As new moods are added, the map keeps evolving and the broader picture changes with time.
 </p>
 
-<h2>Why this experiment exists</h2>
+<h2>Built for low friction and privacy</h2>
 
 <p>
-Mood2Know explores a simple question:  
-can we visualize the emotional state of the world in real time?
+Mood2Know is designed to stay lightweight.
+There is no account, no profile, and no need to write a story.
+Participation is fast, anonymous, and focused on the collective signal.
 </p>
 
 <p>
-By keeping participation anonymous and frictionless, the project focuses on the collective signal rather than personal stories.
+Privacy also matters. The map uses approximate rather than overly precise location, helping reveal geographic patterns without exposing exact personal positions.
+This approach was strengthened through user feedback.
 </p>
 
-<!-- AJOUT LIEN SEO IMPORTANT -->
+<h2>Why this project exists</h2>
+
 <p>
-To understand the concept behind this project, you can also read about the  
+Mood2Know explores a simple question:
+can the emotional state of the world be visualized in real time through tiny anonymous contributions?
+</p>
+
+<p>
+The answer will never be perfect, but even imperfect signals can reveal something meaningful when they are shared collectively.
+The project exists to make that invisible layer visible.
+</p>
+
+<p>
+To understand the broader idea behind this project, you can also read about the
 <a href="/emotional-weather-map.html">emotional weather map</a>.
 </p>
+
+<hr>
 
 <h2>Explore the global mood map</h2>
 
 <p>
-You can participate in seconds and reveal the current emotional weather of the world.
+Open the map, explore the live emotional landscape, and contribute your own mood in seconds.
 </p>
 
-<a class="button" href="https://mood2know.com/">Open Mood2Know</a>
+<div class="cta">
+  <a class="button primary" href="https://mood2know.com/">Open Mood2Know</a>
+</div>
 
 </main>
 
