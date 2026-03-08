@@ -40,7 +40,6 @@
     z-index: 0;
   }
 
-  /* NEW: animated intro background layer */
   #introBg{
     position: fixed;
     inset: 0;
@@ -406,29 +405,29 @@
   <div class="titleSub">the world’s emotional weather</div>
 
   <div id="topStats" class="topStats" aria-label="Mood stats">
-  <div class="topStatsLine">
-    <span class="topStatsLeft">🌍 Global mood today:</span>
-    <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
-  </div>
+    <div class="topStatsLine">
+      <span class="topStatsLeft">🌍 Global mood today:</span>
+      <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
+    </div>
 
-  <div class="topStatsLine">
-    <span class="topStatsLeft">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
-  </div>
+    <div class="topStatsLine">
+      <span class="topStatsLeft">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
+    </div>
 
-  <div class="topStatsLine">
-    <span class="topStatsLeft">😊 Happiest country today:</span>
-    <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
-  </div>
+    <div class="topStatsLine">
+      <span class="topStatsLeft">😊 Happiest country today:</span>
+      <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
+    </div>
 
-  <div class="topStatsNote">🔒 No signup • Anonymous • Approximate location</div>
-</div>
+    <div class="topStatsNote">🔒 No signup • Anonymous • Approximate location</div>
+  </div>
 
   <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
 
   <div id="appView">
     <div class="row moodRow">
       <label>How do you feel right now?</label>
-	<div class="small" id="hint">Add your mood to the global map</div>
+      <div class="small" id="hint">Add your mood to the global map</div>
       <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
 
       <div class="feelBig" id="moodFeeling"></div>
@@ -436,7 +435,7 @@
 
     <div class="row">
       <button id="btnManual" class="secondary" type="button" style="display:none;">
-        Set position manually
+        Confirm location
       </button>
     </div>
 
@@ -768,16 +767,18 @@ function initPointsSourceAndLayers(){
     }
   });
 
-  map.on("click", "clusters-mood", (e) => {
-    const f = e.features[0];
-    map.getSource("points").getClusterExpansionZoom(
-      f.properties.cluster_id,
-      (err, zoom) => {
-        if (err) return;
-        map.easeTo({ center: f.geometry.coordinates, zoom });
-      }
-    );
-  });
+map.on("click", "clusters-mood", (e) => {
+  if (manualPickActive) return;
+
+  const f = e.features[0];
+  map.getSource("points").getClusterExpansionZoom(
+    f.properties.cluster_id,
+    (err, zoom) => {
+      if (err) return;
+      map.easeTo({ center: f.geometry.coordinates, zoom });
+    }
+  );
+});
 
   map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
   map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
@@ -849,7 +850,6 @@ function showManualButton(show){
   btn.style.display = show ? "block" : "none";
 }
 
-/* NEW */
 function setIntroBackground(visible){
   const bg = document.getElementById("introBg");
   if (!bg) return;
@@ -876,10 +876,22 @@ function loadLastLoc(){
     return { lon: v.lon, lat: v.lat, ts: v.ts || 0 };
   } catch { return null; }
 }
-function zoomToLastLocIfAny(){
+function zoomToLastLocIfAny(noAnimation = false){
   const last = loadLastLoc();
   if (!last) return false;
-  map.easeTo({ center: [last.lon, last.lat], zoom: Math.max(map.getZoom(), 8) });
+
+  if (noAnimation) {
+    map.jumpTo({
+      center: [last.lon, last.lat],
+      zoom: Math.max(map.getZoom(), 8)
+    });
+  } else {
+    map.easeTo({
+      center: [last.lon, last.lat],
+      zoom: Math.max(map.getZoom(), 8)
+    });
+  }
+
   return true;
 }
 
@@ -1193,6 +1205,25 @@ async function getCountryFromCoords(lat, lon){
   }
 }
 
+async function getApproxCoordsFromIP(){
+  try{
+    const r = await fetch("https://ipapi.co/json/", {
+      headers: { "Accept": "application/json" }
+    });
+    if (!r.ok) return null;
+
+    const j = await r.json();
+    const lat = Number(j?.latitude);
+    const lon = Number(j?.longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+    return { lat, lon };
+  }catch{
+    return null;
+  }
+}
+
 function fmtInt(n){
   try { return new Intl.NumberFormat().format(n); }
   catch { return String(n); }
@@ -1205,7 +1236,6 @@ async function updateTopStats(){
 
   if (!elAvg || !elTodayCount || !elCountryCount) return;
 
-  // 1) moyenne du jour
   try{
     const startUTC = new Date();
     startUTC.setUTCHours(0,0,0,0);
@@ -1237,7 +1267,6 @@ async function updateTopStats(){
     elAvg.textContent = "—";
   }
 
-  // 2) stats totales : nombre total de moods + nombre total de pays
   try{
     const { data, error } = await sb
       .from("mood_entries")
@@ -1484,10 +1513,10 @@ function updateFeeling(v){
   }
 
   if (v === undefined || v === null) {
-  mf.textContent = "I feel...";
+    mf.textContent = "I feel...";
   } else {
-  mf.textContent = moodPhrase(v).replace(/\.$/, "");
-}
+    mf.textContent = moodPhrase(v).replace(/\.$/, "");
+  }
 }
 function renderMoodButtons(){
   const wrap = el("moodButtons");
@@ -1554,19 +1583,28 @@ function startManualPick() {
   pendingManualCoords = null;
   setManualReady(false);
 
-  const didZoom = zoomToLastLocIfAny();
-  if (!didZoom) map.easeTo({ zoom: Math.max(map.getZoom(), 3) });
+  map.stop(); // stop any animation
+
+  const didZoom = zoomToLastLocIfAny(true);
+  if (!didZoom) {
+    map.jumpTo({
+      center: map.getCenter(),
+      zoom: Math.max(map.getZoom(), 3)
+    });
+  }
 
   if (manualPickActive) return;
   manualPickActive = true;
 
   map.getCanvas().style.cursor = "crosshair";
+  map.off("click", onManualMapClick);
   map.on("click", onManualMapClick);
 
   setAppMessage("Click on the map to set your position.");
 }
 
 function onManualMapClick(e) {
+    map.stop();
   const coords = { lon: e.lngLat.lng, lat: e.lngLat.lat };
   pendingManualCoords = coords;
 
@@ -1582,6 +1620,35 @@ function onManualMapClick(e) {
   setAppMessage("Tap the button to confirm this location.");
 }
 
+function prepareApproxManualPick(coords, msg){
+  showManualButton(true);
+  panel.className = "panel-manual-micro";
+
+  pendingManualCoords = coords;
+  manualPickActive = true;
+
+  map.stop(); // stop fly animation
+
+  map.jumpTo({
+    center: [coords.lon, coords.lat],
+    zoom: Math.max(map.getZoom(), 7)
+  });
+
+  map.getCanvas().style.cursor = "crosshair";
+  map.off("click", onManualMapClick);
+  map.on("click", onManualMapClick);
+
+  if (!manualMarker) {
+    manualMarker = new maplibregl.Marker({ color: "#111" })
+      .setLngLat([coords.lon, coords.lat])
+      .addTo(map);
+  } else {
+    manualMarker.setLngLat([coords.lon, coords.lat]);
+  }
+
+  setManualReady(true);
+  setAppMessage(msg || "Approximate location found. Adjust if needed, then confirm.");
+}
 
 function addPrivacyBlur(coords, maxMeters = 300) {
   const lat = Number(coords.lat);
@@ -1612,7 +1679,6 @@ async function saveMoodAtCoords(coords) {
 
   setAppMessage("Saving your mood…");
 
-  // Privacy blur: random offset up to 300 m before any network request
   const blurredCoords = addPrivacyBlur(coords, 300);
 
   const c = await getCountryFromCoords(blurredCoords.lat, blurredCoords.lon);
@@ -1659,7 +1725,6 @@ async function saveMoodAtCoords(coords) {
   return true;
 }
 
-
 async function autoSaveWithGeoOrManual(){
   const now = Date.now();
   if (isSaving) return;
@@ -1674,8 +1739,18 @@ async function autoSaveWithGeoOrManual(){
   setAppMessage("Locating…");
 
   if (!navigator.geolocation) {
-    setAppMessage("Geolocation not supported. Please set position manually.");
-    startManualPick();
+    const approx = await getApproxCoordsFromIP();
+
+    if (approx) {
+      prepareApproxManualPick(
+        approx,
+        "Approximate location found. Adjust if needed, then confirm."
+      );
+    } else {
+      setAppMessage("Unable to detect location. Please set position manually.");
+      startManualPick();
+    }
+
     isSaving = false;
     return;
   }
@@ -1686,9 +1761,19 @@ async function autoSaveWithGeoOrManual(){
       await saveMoodAtCoords(coords);
       isSaving = false;
     },
-    (err) => {
-      setAppMessage("Geolocation error: " + err.message);
-      startManualPick();
+    async (err) => {
+      const approx = await getApproxCoordsFromIP();
+
+      if (approx) {
+        prepareApproxManualPick(
+          approx,
+          "Browser geolocation was refused. Approximate location found — adjust if needed, then confirm."
+        );
+      } else {
+        setAppMessage("Geolocation error: " + err.message + ". Please set position manually.");
+        startManualPick();
+      }
+
       isSaving = false;
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
