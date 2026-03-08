@@ -1594,18 +1594,9 @@ function startManualPick() {
   setAppMessage("Click on the map to set your position.");
 }
 
-  if (manualPickActive) return;
-  manualPickActive = true;
-
-  map.getCanvas().style.cursor = "crosshair";
-  map.off("click", onManualMapClick);
-  map.on("click", onManualMapClick);
-
-  setAppMessage("Click on the map to set your position.");
-}
-
 function onManualMapClick(e) {
-    map.stop();
+  map.stop();
+
   const coords = { lon: e.lngLat.lng, lat: e.lngLat.lat };
   pendingManualCoords = coords;
 
@@ -1626,13 +1617,15 @@ function prepareApproxManualPick(coords, msg){
   panel.className = "panel-manual-micro";
 
   pendingManualCoords = coords;
-  manualPickActive = true;
 
   map.stop();
 
-  map.getCanvas().style.cursor = "crosshair";
-  map.off("click", onManualMapClick);
-  map.on("click", onManualMapClick);
+  if (!manualPickActive) {
+    manualPickActive = true;
+    map.getCanvas().style.cursor = "crosshair";
+    map.off("click", onManualMapClick);
+    map.on("click", onManualMapClick);
+  }
 
   if (!manualMarker) {
     manualMarker = new maplibregl.Marker({ color: "#111" })
