@@ -1176,7 +1176,7 @@ function soundWatchdog(){
 }
 
 const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
-const SUPABASE_ANON_KEY = "elkqu4w";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function getCountryFromCoords(lat, lon){
@@ -1972,7 +1972,7 @@ map.on("load", async () => {
       const on = btn.dataset.setLang === lang;
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
-
+a
     localStorage.setItem('m2k_lang', lang);
   }
 
