@@ -121,16 +121,21 @@
     padding: 10px 10px;
     border-radius: 14px;
   }
-  .panel-manual-micro .titleSub,
-  .panel-manual-micro #dragHandle,
-  .panel-manual-micro #hint,
-  .panel-manual-micro #soundRow,
-  .panel-manual-micro #appMsg,
-  .panel-manual-micro #about,
-  .panel-manual-micro .moodRow,
-  .panel-manual-micro #trendBox {
-    display:none !important;
-  }
+.panel-manual-micro .titleSub,
+.panel-manual-micro #dragHandle,
+.panel-manual-micro #hint,
+.panel-manual-micro #soundRow,
+.panel-manual-micro #about,
+.panel-manual-micro .moodRow,
+.panel-manual-micro #trendBox {
+  display:none !important;
+}
+
+.panel-manual-micro #appMsg{
+  font-size:12px;
+  opacity:.8;
+  margin-top:6px;
+}
 
   h3 { margin:0; font-size:18px; }
 
@@ -1618,7 +1623,7 @@ pendingManualCoords = null;
   map.off("click", onManualMapClick);
   map.on("click", onManualMapClick);
 
-  setAppMessage("Click on the map to set your position.");
+  setAppMessage("Move the map if needed, then confirm.");
 }
 
 function onManualMapClick(e) {
@@ -1670,7 +1675,7 @@ function prepareApproxManualPick(coords, msg){
   }
 
   setManualReady(true);
-  setAppMessage(msg || "Approximate location found. Adjust if needed, then confirm.");
+  setAppMessage("Move the map if needed, then confirm.");
 }
 
 function addPrivacyBlur(coords, maxMeters = 300) {
