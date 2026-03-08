@@ -684,10 +684,10 @@ function moodImageData(level, size=96){
 
  
 
-const browBaseY = eyeY - size * lerp(0.07, 0.16, t);
-const browLift = size * lerp(0.004, 0.03, t);
+const browBaseY = eyeY - size * lerp(0.07, 0.12, t);
+const browLift  = size * lerp(0.003, 0.018, t);
 const browHalfW = size * 0.065;
-const browArch = size * lerp(0.01, 0.035, t);
+const browArch  = size * lerp(0.01, 0.028, t);
 
 ctx.lineWidth = Math.max(3, size * 0.035);
 ctx.strokeStyle = "rgba(0,0,0,0.55)";
