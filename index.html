@@ -688,7 +688,9 @@ const browY = eyeY - size*0.08;
 
 // low moods: sourcils un peu inclinés vers l'intérieur
 // high moods: presque neutres, très légèrement relevés
-const browTilt = lerp(0.16, -0.04, t);
+const browTilt = t < 0.5
+  ? lerp(0.16, 0.02, t / 0.5)
+  : lerp(0.02, -0.02, (t - 0.5) / 0.5);
 
 ctx.lineWidth = Math.max(3, size*0.035);
 ctx.strokeStyle = "rgba(0,0,0,0.55)";
