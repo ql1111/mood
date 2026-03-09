@@ -1,3 +1,1793 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google-site-verification" content="GwVBCPhOP2ARcKB4mcqgDfqKZ9LX_cp84PxNzmJgWWI" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Mood2Know — A live map of the world's mood</title>
+
+<meta name="description" content="Mood2Know — the world’s first emotional weather report. Share your mood in one click and discover the world’s mood. Anonymous, minimalist, global experiment.">
+<meta name="robots" content="index,follow">
+
+<meta property="og:title" content="Mood2Know — the world’s mood in one click">
+<meta property="og:description" content="The world’s first emotional weather report. Share your mood anonymously in one click and reveal the collective mood.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mood2know.com/">
+<meta property="og:site_name" content="Mood2Know">
+<meta property="og:image" content="https://mood2know.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="628">
+<meta property="og:image:alt" content="Mood2Know — The world’s emotional weather map">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mood2Know — the world’s mood in one click">
+<meta name="twitter:description" content="The world’s first emotional weather report. Share your mood anonymously in one click.">
+<meta name="twitter:image" content="https://mood2know.com/og.jpg">
+<meta name="twitter:image:alt" content="Mood2Know — The world’s emotional weather map">
+
+<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+<link rel="canonical" href="https://mood2know.com/">
+<link rel="stylesheet" href="./maplibre-gl.css">
+
+<style>
+  html, body { margin:0; height:100%; font:16px system-ui; }
+  :root { --vh: 1vh; }
+
+#map{
+  position:fixed; inset:0;
+  height: calc(var(--vh) * 100);
+  z-index: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+
+#map.is-visible{
+  opacity: 1;
+  visibility: visible;
+}
+
+  #introBg{
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .8s ease, visibility .8s ease;
+    overflow: hidden;
+  }
+
+  #introBg.is-hidden{
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  #introFrame{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    pointer-events: none;
+    transform: scale(1.03);
+    filter: saturate(1.02) contrast(1.02);
+  }
+
+  #introVeil{
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 22% 18%, rgba(255,255,255,0.34), transparent 34%),
+      radial-gradient(circle at 78% 30%, rgba(255,255,255,0.18), transparent 30%),
+      linear-gradient(to bottom, rgba(255,255,255,0.10), rgba(255,255,255,0.18));
+  }
+
+  #panel{
+    position: fixed;
+    z-index: 10;
+    background: rgba(255,255,255,0.96);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.25);
+    padding: 16px;
+    transition: width .25s ease, padding .25s ease, border-radius .25s ease, transform .25s ease;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-top: calc(16px + env(safe-area-inset-top));
+    left: 12px;
+    top: 12px;
+
+    max-height: calc(var(--vh) * 100 - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    overflow-x: hidden;
+  }
+
+  .panel-app{
+    width: 340px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .panel-compact{
+    width: 260px;
+    max-width: calc(100vw - 24px);
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .panel-manual-micro{
+    width: 170px;
+    max-width: 170px;
+    padding: 10px 10px;
+    border-radius: 14px;
+  }
+.panel-manual-micro .titleSub,
+.panel-manual-micro #dragHandle,
+.panel-manual-micro #hint,
+.panel-manual-micro #soundRow,
+.panel-manual-micro #about,
+.panel-manual-micro .moodRow,
+.panel-manual-micro #trendBox {
+  display:none !important;
+}
+
+.panel-manual-micro #appMsg{
+  font-size:12px;
+  opacity:.8;
+  margin-top:6px;
+}
+
+  h3 { margin:0; font-size:18px; }
+
+  .titleSub{
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.15;
+    margin-top: 2px;
+    margin-bottom: 10px;
+    opacity: 0.75;
+  }
+
+  .panel-compact .titleSub { display: none; }
+
+  #dragHandle{
+    width: 54px;
+    height: 6px;
+    border-radius: 999px;
+    margin: 6px auto 10px;
+    background: rgba(0,0,0,0.18);
+    cursor: grab;
+    touch-action: none;
+  }
+  #dragHandle:active{ cursor: grabbing; }
+
+  .row { display:grid; gap:10px; margin:10px 0; }
+
+  input, button, textarea{
+    font:inherit;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.15);
+  }
+  textarea{ resize: vertical; min-height: 120px; }
+
+  button{ background:#111; color:#fff; border:0; cursor:pointer; }
+  button.secondary{ background:#eee; color:#111; }
+  button:disabled { opacity:.55; cursor: not-allowed; }
+
+  .small{ font-size:13px; opacity:.75; }
+  .msg{ white-space:pre-wrap; font-size:13px; }
+
+  .feelBig{
+    font-size: 16px;
+    line-height: 1.25;
+    font-weight: 650;
+    opacity: .95;
+  }
+
+  #btnSound{
+    width: 100%;
+    font-weight: 650;
+  }
+
+  #appView, #compactView { display:none; }
+
+  @media (max-width: 520px) {
+    .panel-compact{
+      width: 150px;
+      max-width: 150px;
+      padding: 9px 10px;
+    }
+    button, input, textarea { padding: 14px; font-size: 16px; }
+    .feelBig{ font-size: 17px; }
+  }
+
+  @media (max-width: 520px) {
+    #btnComments, #btnShare, #btnExpand { padding: 10px 8px; font-size: 13px; }
+  }
+
+  .sr-only{
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:-1px;
+    overflow:hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border:0;
+  }
+
+  .topStats{
+    margin: 6px 0 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.035);
+    border: 1px solid rgba(0,0,0,0.06);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .topStatsLine{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    opacity: .92;
+    margin: 4px 0;
+  }
+  .topStatsLeft{ white-space: nowrap; }
+  .topStatsRight{
+    margin-left:auto;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    opacity: .95;
+  }
+  .topStatsNote{
+    font-size: 12px;
+    opacity: .72;
+    margin-top: 6px;
+    line-height: 1.35;
+  }
+  .panel-compact .topStats{ display:none; }
+  .panel-manual-micro .topStats{ display:none !important; }
+
+  .moodButtons{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:8px;
+  }
+  @media (max-width: 520px){
+    .moodButtons{ gap:6px; }
+  }
+  .moodBtn{
+    background: transparent;
+    color: #111;
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 12px;
+    padding: 10px 0;
+    cursor: pointer;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    transition: transform .08s ease, filter .12s ease, box-shadow .12s ease, border-color .12s ease;
+  }
+  .moodBtn:hover{
+    filter: brightness(1.03);
+  }
+  .moodBtn:active{ transform: translateY(1px); }
+  .moodBtn[aria-pressed="true"]{
+    border-color: rgba(0,0,0,.55);
+    box-shadow: 0 8px 18px rgba(0,0,0,.18);
+  }
+
+  .m2k-about{ margin-top: 10px; }
+  .m2k-details{ border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
+
+  .m2k-summary{
+    cursor:pointer;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    user-select:none;
+    font-size: 12.5px;
+    opacity: .72;
+  }
+  .m2k-summary::-webkit-details-marker{ display:none; }
+  .m2k-summary:hover{ opacity: .95; }
+  .m2k-summary-icon{ margin-left:auto; opacity: .6; }
+
+  .m2k-lang{
+    margin-top: 8px;
+    display:flex;
+    gap:6px;
+    opacity: .75;
+    flex-wrap: wrap;
+  }
+  .m2k-lang-btn{
+    color:#111;
+    border: 1px solid rgba(0,0,0,.12);
+    background: transparent;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+  .m2k-lang-btn[aria-pressed="true"]{
+    background: rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,.28);
+    opacity: 1;
+  }
+
+  .m2k-text{
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    opacity: .88;
+  }
+  .m2k-text p{ margin: 0 0 10px; }
+
+  #fbOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  #fbModal{
+    width: min(720px, 100%);
+    background: rgba(255,255,255,0.98);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.25);
+    padding: 16px;
+  }
+  #fbModal h4 { margin: 0 0 10px; font-size: 17px; }
+  #fbCount{ font-size: 12px; opacity: .7; text-align:right; margin-top:6px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+
+  #shareOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 70;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  #shareModal{
+    width: min(520px, 100%);
+    background: rgba(255,255,255,0.98);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.25);
+    padding: 16px;
+  }
+  .share-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    margin-top: 10px;
+  }
+  .share-grid a{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    font:inherit;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.15);
+    background:#eee;
+    color:#111;
+  }
+  .share-grid a:active{ transform: translateY(1px); }
+
+  @keyframes m2kBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+  .blink {
+    animation: m2kBlink 0.9s ease-in-out infinite;
+  }
+</style>
+</head>
+
+<body>
+
+<h1 class="sr-only">Mood2Know – The world’s emotional weather map</h1>
+
+<div id="map"></div>
+
+<div id="introBg" aria-hidden="true">
+  <iframe
+    id="introFrame"
+    src="/replay.html"
+    title=""
+    tabindex="-1"
+    loading="eager"
+    referrerpolicy="no-referrer"
+  ></iframe>
+  <div id="introVeil"></div>
+</div>
+
+<div id="panel" class="panel-app">
+  <h3>Mood2Know</h3>
+  <div class="titleSub">the world’s emotional weather</div>
+
+<div id="topStats" class="topStats" aria-label="Mood stats">
+<div class="topStatsLine">
+  <span class="topStatsLeft" id="statAvgLabel">🌍 Global mood (last 24h):</span>
+  <span class="topStatsRight"><b><span id="statAvgToday">—</span> / 10</b></span>
+</div>
+
+<div class="topStatsLine">
+  <span class="topStatsLeft" id="statCountLabel">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
+</div>
+
+<div class="topStatsLine">
+  <span class="topStatsLeft" id="statHappyLabel">😊 Happiest country (last 24h):</span>
+  <span class="topStatsRight"><b><span id="statHappiest">—</span></b></span>
+</div>
+
+    <div class="topStatsNote">🔒 No signup • Anonymous • Approximate location</div>
+  </div>
+
+  <div id="dragHandle" title="Drag panel" aria-label="Drag panel"></div>
+
+  <div id="appView">
+   <div class="row moodRow">
+   <label>How do you feel right now?</label>
+   <div class="small" id="hint">Add your mood and compare yourself with the world</div>
+   <div id="moodButtons" class="moodButtons" role="group" aria-label="Mood from 1 to 10"></div>
+
+   <div class="feelBig" id="moodFeeling"></div>
+  </div>
+
+    <div class="row">
+      <button id="btnManual" class="secondary" type="button" style="display:none;">
+        Confirm location
+      </button>
+    </div>
+
+    <div class="row" id="trendBox" style="margin-top:6px;">
+      <div class="small" style="opacity:.8; font-weight:650;">Your 7-Day Mood Trend</div>
+      <canvas id="trendCanvas" width="320" height="90" style="width:100%; height:auto; border-radius:14px; border:1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02);"></canvas>
+      <div class="small" id="trendNote" style="opacity:.75;">—</div>
+    </div>
+
+    <div class="row" id="soundRow" style="margin-top:0; display:none;">
+      <button id="btnSound" class="secondary" type="button">🔊 Enable sound</button>
+    </div>
+
+    <div id="appMsg" class="msg"></div>
+  </div>
+
+<div id="compactView">
+  <div class="small" id="compactMsg">✅ Saved.</div>
+
+  <div class="row" style="margin-top:8px; gap:8px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+      <button id="btnComments" class="secondary" type="button">Comments?</button>
+      <button id="btnShare" class="secondary" type="button">Share</button>
+    </div>
+    <button id="btnExpand" class="secondary" type="button">Change mood</button>
+  </div>
+</div>
+
+  <section id="about" class="m2k-about" aria-label="About Mood2Know">
+    <details class="m2k-details" id="m2kDetails">
+      <summary class="m2k-summary">
+        <span class="m2k-summary-label" data-i18n="summary">Why Mood2Know?</span>
+        <span class="m2k-summary-icon" aria-hidden="true">▾</span>
+      </summary>
+
+      <div class="m2k-lang" aria-label="Language">
+        <button type="button" class="m2k-lang-btn" data-set-lang="en">EN</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="fr">FR</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="es">ES</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="it">IT</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="de">DE</button>
+        <button type="button" class="m2k-lang-btn" data-set-lang="zh">中文</button>
+      </div>
+
+      <div class="m2k-text" lang="en" data-lang="en">
+        <p><strong>Mood2Know aims to become the world’s first emotional weather report.</strong></p>
+        <p>Every day, millions of people experience emotions that remain invisible. Mood2Know was created to make this collective mood visible, in a simple and anonymous way.</p>
+        <p>By answering in just one click, you take part in a global experiment. No account, no explanation, no personal data — just a momentary feeling, shared as it is.</p>
+        <p>The goal is to reach <strong>10,000 participants</strong>. Once this threshold is reached, Mood2Know will reveal a unique insight: a snapshot of the world’s emotional state at a given moment.</p>
+        <p>This emotional “weather” evolves constantly. Observing its changes helps put individual feelings into perspective and highlights the diversity of human experiences across places and time.</p>
+        <p>Mood2Know is not about analysis or diagnosis. It is a minimalist, open space designed for participation, curiosity, and awareness.</p>
+        <p><strong>Mood needs you.</strong> Every response matters. The more people take part, the more meaningful this shared emotional picture becomes.</p>
+      </div>
+
+      <div class="m2k-text" lang="fr" data-lang="fr">
+        <p><strong>Mood2Know veut devenir la première météo émotionnelle du monde.</strong></p>
+        <p>Chaque jour, des millions de personnes ressentent des émotions qui restent invisibles. Mood2Know est né pour rendre cette humeur collective visible, simplement et anonymement.</p>
+        <p>En répondant en un clic, vous participez à une expérience mondiale. Pas de compte, pas d’explication, pas de données personnelles — juste un ressenti du moment, partagé tel qu’il est.</p>
+        <p>L’objectif est d’atteindre <strong>10 000 participants</strong>. Une fois ce seuil franchi, Mood2Know pourra révéler une information unique : une photographie de l’état émotionnel du monde à un instant donné.</p>
+        <p>Cette “météo” émotionnelle évolue en permanence. Observer ses variations aide à prendre du recul sur ce que l’on ressent et montre la diversité des expériences humaines, selon les lieux et les périodes.</p>
+        <p>Mood2Know n’est pas là pour analyser ou diagnostiquer. Le site se veut minimaliste, ouvert, et pensé pour la participation, la curiosité et la prise de conscience.</p>
+        <p><strong>Mood a besoin de vous.</strong> Chaque réponse compte. Plus vous êtes nombreux, plus cette image émotionnelle partagée devient significative.</p>
+      </div>
+
+      <div class="m2k-text" lang="es" data-lang="es">
+        <p><strong>Mood2Know quiere convertirse en el primer clima emocional del mundo.</strong></p>
+        <p>Cada día, millones de personas sienten emociones que permanecen invisibles. Mood2Know nace para hacer visible ese estado emocional colectivo, de forma simple y anónima.</p>
+        <p>Con un solo clic, participas en una experiencia global. Sin cuenta, sin explicación, sin datos personales — solo un sentimiento del momento, compartido tal como es.</p>
+        <p>El objetivo es alcanzar <strong>10.000 participants</strong>. Al llegar a este umbral, Mood2Know revelará una información única: una fotografía del estado emocional del mundo en un instante concreto.</p>
+        <p>Este “clima” emocional cambia constantemente. Observar su evolución ayuda a relativizar lo individual y a mostrar la diversidad de experiencias humanas.</p>
+        <p>Mood2Know no analiza ni diagnostica. Es un espacio minimalista, abierto, pensado para la participación y la conciencia colectiva.</p>
+        <p><strong>Mood te necesita.</strong> Cada respuesta cuenta.</p>
+      </div>
+
+      <div class="m2k-text" lang="it" data-lang="it">
+        <p><strong>Mood2Know vuole diventare la prima meteo emotiva del mondo.</strong></p>
+        <p>Ogni giorno, milioni di persone provano emozioni che restano invisibili. Mood2Know nasce per rendere visibile questo stato emotivo collettivo, in modo semplice e anonimo.</p>
+        <p>Con un solo clic partecipi a un’esperienza globale. Nessun account, nessuna spiegazione, nessun dato personale — solo un’emozione del momento, condivisa così com’è.</p>
+        <p>L’obiettivo è raggiungere <strong>10.000 partecipanti</strong>. Una volta superata questa soglia, Mood2Know mostrerà un’informazione unica: una fotografia dello stato emotivo del mondo in un dato momento.</p>
+        <p>Questa “meteo” emotiva cambia continuamente. Osservarne le variazioni aiuta a mettere in prospettiva ciò che proviamo.</p>
+        <p>Mood2Know non analizza né diagnostica. È uno spazio minimale, aperto e partecipativo.</p>
+        <p><strong>Mood ha bisogno di te.</strong> Ogni risposta è importante.</p>
+      </div>
+
+      <div class="m2k-text" lang="de" data-lang="de">
+        <p><strong>Mood2Know möchte der erste emotionale Wetterbericht der Welt werden.</strong></p>
+        <p>Jeden Tag erleben Millionen von Menschen Gefühle, die unsichtbar bleiben. Mood2Know wurde geschaffen, um diese kollektive Stimmung sichtbar zu machen — einfach und anonym.</p>
+        <p>Mit nur einem Klick nimmst du an einem weltweiten Experiment teil. Kein Konto, keine Erklärung, keine persönlichen Daten — nur ein momentanes Gefühl.</p>
+        <p>Das Ziel sind <strong>10.000 Teilnehmende</strong>. Wird diese Schwelle erreicht, zeigt Mood2Know eine einzigartige Momentaufnahme des emotionalen Zustands der Welt.</p>
+        <p>Dieses emotionale „Wetter“ verändert sich ständig. Es zu beobachten hilft, individuelle Gefühle einzuordnen.</p>
+        <p>Mood2Know analysiert oder diagnostiziert nicht. Es ist ein minimalistischer, offener Raum für Bewusstsein und Neugier.</p>
+        <p><strong>Mood braucht dich.</strong> Jede Teilnahme zählt.</p>
+      </div>
+
+      <div class="m2k-text" lang="zh" data-lang="zh">
+        <p><strong>Mood2Know 致力于成为世界上第一份情绪天气报告。</strong></p>
+        <p>每天，数百万人体验着难以被看见的情绪。Mood2Know 的诞生，是为了以简单、匿名的方式呈现这种集体情绪。</p>
+        <p>只需一次点击，你就能参与一项全球性的实验。无需账号、无需解释、无需个人信息 —— 只是当下的真实感受。</p>
+        <p>目标是达到 <strong>10,000 名参与者</strong>。一旦达成，Mood2Know 将展示一个独特的视角：某一时刻世界的情绪快照。</p>
+        <p>这种“情绪天气”不断变化。观察它，有助于理解个体情绪与世界之间的联系。</p>
+        <p>Mood2Know 不进行分析或诊断，而是一个极简、开放、鼓励参与的空间。</p>
+        <p><strong>Mood 需要你。</strong> 每一次参与都很重要。</p>
+      </div>
+
+      <p class="small" style="margin-top:12px;">
+        Learn more:
+        <a href="/emotional-weather-map">Emotional weather map</a> ·
+        <a href="/world-mood-map">World mood map</a>
+      </p>
+    </details>
+  </section>
+</div>
+
+<div id="fbOverlay" aria-hidden="true">
+  <div id="fbModal" role="dialog" aria-modal="true">
+    <h4>Send feedback</h4>
+    <div class="small">This message is private and helps improve the project.</div>
+    <div style="height:10px"></div>
+
+    <label class="small" for="fbText">Message</label>
+    <textarea id="fbText" maxlength="5000" placeholder="Optional: tell us why you feel this way…"></textarea>
+    <div id="fbCount">0 / 5000 • 0 / 250 words</div>
+
+    <div id="fbMsg" class="msg" style="margin-top:8px;"></div>
+
+    <div class="modal-actions" style="margin-top:12px;">
+      <button id="btnFbCancel" class="secondary" type="button">Cancel</button>
+      <button id="btnFbSend" type="button">Send</button>
+    </div>
+  </div>
+</div>
+
+<div id="shareOverlay" aria-hidden="true">
+  <div id="shareModal" role="dialog" aria-modal="true">
+    <h4>Share Mood2Know</h4>
+    <div class="small">Invite others to add one click to the world’s emotional weather.</div>
+
+    <div class="share-grid">
+      <a id="shareWhatsApp" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a id="shareReddit"   href="#" target="_blank" rel="noopener">Reddit</a>
+      <a id="shareX"        href="#" target="_blank" rel="noopener">X (Twitter)</a>
+      <a id="shareFacebook" href="#" target="_blank" rel="noopener">Facebook</a>
+    </div>
+
+    <div class="modal-actions" style="margin-top:12px;">
+      <button id="btnShareClose" class="secondary" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="./maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+function setVh() {
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+window.addEventListener('resize', setVh);
+setVh();
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: [
+          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        ],
+        tileSize: 256,
+        attribution: "© OpenStreetMap contributors"
+      }
+    },
+    layers: [{ id: "osm", type: "raster", source: "osm" }]
+  },
+  center: [0, 20],
+  zoom: 2
+});
+map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+function lerp(a,b,t){ return a + (b - a) * t; }
+function lerpColor(c1,c2,t){
+  const r = Math.round(lerp(c1[0], c2[0], t));
+  const g = Math.round(lerp(c1[1], c2[1], t));
+  const b = Math.round(lerp(c1[2], c2[2], t));
+  return `rgb(${r},${g},${b})`;
+}
+
+function moodFillColor(v){
+  const t = Math.max(0, Math.min(1, v/10));
+  const red=[215,25,28], yellow=[255,255,191], green=[26,150,65];
+  return (t < 0.5)
+    ? lerpColor(red, yellow, t/0.5)
+    : lerpColor(yellow, green, (t-0.5)/0.5);
+}
+function textColorForBg(rgbStr){
+  const m = rgbStr.match(/rgb\((\d+),(\d+),(\d+)\)/);
+  if(!m) return "#111";
+  const r = Number(m[1]), g = Number(m[2]), b = Number(m[3]);
+  const luminance = (0.2126*r + 0.7152*g + 0.0722*b);
+  return luminance < 140 ? "#fff" : "#111";
+}
+
+function moodImageData(level, size=96){
+  const fill = moodFillColor(level);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext("2d");
+
+  const cx = size/2, cy = size/2, r = size*0.42;
+
+  ctx.beginPath(); ctx.arc(cx, cy+3, r, 0, Math.PI*2);
+  ctx.fillStyle="rgba(0,0,0,0.18)"; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = Math.max(3, size*0.04);
+  ctx.strokeStyle = "rgba(0,0,0,0.25)";
+  ctx.stroke();
+
+  const t = Math.max(0, Math.min(1, level/10));
+
+  const eyeY = cy - size*0.10, eyeDX=size*0.14, eyeR=size*0.04;
+  ctx.beginPath();
+  ctx.arc(cx-eyeDX, eyeY, eyeR, 0, Math.PI*2);
+  ctx.arc(cx+eyeDX, eyeY, eyeR, 0, Math.PI*2);
+  ctx.fillStyle="rgba(0,0,0,0.75)";
+  ctx.fill();
+
+ 
+
+const browBaseY = eyeY - size * lerp(0.07, 0.12, t);
+const browLift  = size * lerp(0.003, 0.018, t);
+const browHalfW = size * 0.065;
+const browArch  = size * lerp(0.01, 0.028, t);
+
+ctx.lineWidth = Math.max(3, size * 0.035);
+ctx.strokeStyle = "rgba(0,0,0,0.55)";
+ctx.lineCap = "round";
+
+const leftBrowX = cx - eyeDX;
+const rightBrowX = cx + eyeDX;
+
+// sourcil gauche : extrémité extérieure un peu plus haute
+ctx.beginPath();
+ctx.moveTo(leftBrowX - browHalfW, browBaseY - browLift);
+ctx.quadraticCurveTo(
+  leftBrowX,
+  browBaseY - browArch - browLift,
+  leftBrowX + browHalfW,
+  browBaseY + browLift * 0.35
+);
+ctx.stroke();
+
+// sourcil droit : extrémité extérieure un peu plus haute
+ctx.beginPath();
+ctx.moveTo(rightBrowX - browHalfW, browBaseY + browLift * 0.35);
+ctx.quadraticCurveTo(
+  rightBrowX,
+  browBaseY - browArch - browLift,
+  rightBrowX + browHalfW,
+  browBaseY - browLift
+);
+ctx.stroke();
+  
+
+
+const mouthY = cy + size*0.12, mouthW=size*0.26;
+  const curvature = lerp(-1, 1, t);
+  ctx.beginPath();
+  ctx.moveTo(cx-mouthW, mouthY);
+  ctx.quadraticCurveTo(cx, mouthY + curvature*size*0.12, cx+mouthW, mouthY);
+  ctx.strokeStyle="rgba(0,0,0,0.70)";
+  ctx.lineWidth=Math.max(4, size*0.05);
+  ctx.lineCap="round";
+  ctx.stroke();
+
+  const img = ctx.getImageData(0,0,size,size);
+  return { width: img.width, height: img.height, data: img.data };
+}
+function ensureMoodImages(){
+  for(let lvl=0; lvl<=10; lvl++){
+    const name = `mood-${lvl}`;
+    if(!map.hasImage(name)) map.addImage(name, moodImageData(lvl,96));
+  }
+}
+
+function initPointsSourceAndLayers(){
+  if(map.getSource("points")) return;
+
+  map.addSource("points", {
+    type: "geojson",
+    data: { type:"FeatureCollection", features: [] },
+    cluster: true,
+    clusterRadius: 60,
+    clusterMaxZoom: 14,
+    clusterProperties: { sum: ["+", ["get", "value"]], count: ["+", 1] }
+  });
+
+  const avgRoundedClamped = [
+    "case",
+    ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
+    [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
+    ["round", ["/", ["get","sum"], ["get","count"]]]
+  ];
+
+  map.addLayer({
+    id: "clusters-mood",
+    type: "symbol",
+    source: "points",
+    filter: ["has", "point_count"],
+    layout: {
+      "icon-image": ["concat","mood-", ["to-string", avgRoundedClamped]],
+      "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
+      "icon-allow-overlap": true,
+      "text-field": ["to-string", ["get","point_count"]],
+      "text-size": 12,
+      "text-offset": [0, 1.55],
+      "text-allow-overlap": true,
+      "text-anchor": "top"
+    },
+    paint: {
+      "text-color": "rgba(0,0,0,0.75)",
+      "text-halo-color": "rgba(255,255,255,0.9)",
+      "text-halo-width": 1
+    }
+  });
+
+  map.addLayer({
+    id: "points-mood",
+    type: "symbol",
+    source: "points",
+    filter: ["!", ["has", "point_count"]],
+    layout: {
+      "icon-image": [
+        "concat","mood-",
+        ["to-string",
+          ["case",
+            ["<", ["round", ["get","value"]], 0], 0,
+            [">", ["round", ["get","value"]], 10], 10,
+            ["round", ["get","value"]]
+          ]
+        ]
+      ],
+      "icon-size": 0.55,
+      "icon-allow-overlap": true
+    }
+  });
+
+map.on("click", "clusters-mood", (e) => {
+  if (manualPickActive) return;
+
+  const f = e.features[0];
+  map.getSource("points").getClusterExpansionZoom(
+    f.properties.cluster_id,
+    (err, zoom) => {
+      if (err) return;
+      map.easeTo({ center: f.geometry.coordinates, zoom });
+    }
+  );
+});
+
+  map.on("mouseenter", "clusters-mood", () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", "clusters-mood", () => map.getCanvas().style.cursor = "");
+}
+
+function clearMarkers(){
+  const source = map.getSource("points");
+  if(!source) return;
+  source.setData({ type:"FeatureCollection", features: [] });
+}
+
+let revealedThisSession = false;
+
+async function refreshPoints(){
+  if (!revealedThisSession) return;
+
+  const source = map.getSource("points");
+  if(!source) return;
+
+  const { data, error } = await sb
+    .from("mood_latest")
+    .select("mood, lon, lat")
+    .order("created_at", { ascending:false })
+    .limit(20000);
+
+  if(error){
+    setAppMessage("Load failed: " + (error.message || "Unknown error"));
+    console.warn("LOAD error:", error);
+    return;
+  }
+
+  const features = (data || [])
+    .filter(r => typeof r.lon==="number" && typeof r.lat==="number")
+    .map(r => ({
+      type: "Feature",
+      properties: { value: r.mood },
+      geometry: { type:"Point", coordinates:[r.lon, r.lat] }
+    }));
+
+  source.setData({ type:"FeatureCollection", features });
+}
+
+const el = id => document.getElementById(id);
+const panel = el("panel");
+
+const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
+
+function collapseAbout() {
+  const d = el("m2kDetails");
+  if (d) d.open = false;
+}
+
+function setMainMapVisible(visible){
+  const mapEl = document.getElementById("map");
+  if (!mapEl) return;
+  mapEl.classList.toggle("is-visible", !!visible);
+}
+
+
+function showApp(){
+  panel.className = "panel-app";
+  el("appView").style.display = "block";
+  el("compactView").style.display = "none";
+}
+function showCompact(msg="✅ Saved."){
+  panel.className = "panel-compact";
+  el("compactMsg").textContent = msg;
+  el("appView").style.display = "none";
+  el("compactView").style.display = "block";
+}
+function setAppMessage(msg){ el("appMsg").textContent = msg || ""; }
+
+function showManualButton(show){
+  const btn = el("btnManual");
+  if(!btn) return;
+  btn.style.display = show ? "block" : "none";
+}
+
+function setIntroBackground(visible){
+  const bg = document.getElementById("introBg");
+  if (!bg) return;
+  bg.classList.toggle("is-hidden", !visible);
+}
+
+const LAST_LOC_KEY = "m2k_last_loc";
+
+function saveLastLoc(coords){
+  try {
+    localStorage.setItem(LAST_LOC_KEY, JSON.stringify({
+      lon: coords.lon,
+      lat: coords.lat,
+      ts: Date.now()
+    }));
+  } catch {}
+}
+function loadLastLoc(){
+  try {
+    const raw = localStorage.getItem(LAST_LOC_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (!v || typeof v.lon !== "number" || typeof v.lat !== "number") return null;
+    return { lon: v.lon, lat: v.lat, ts: v.ts || 0 };
+  } catch { return null; }
+}
+function zoomToLastLocIfAny(noAnimation = false){
+  const last = loadLastLoc();
+  if (!last) return false;
+
+  if (noAnimation) {
+    map.jumpTo({
+      center: [last.lon, last.lat],
+      zoom: Math.max(map.getZoom(), 8)
+    });
+  } else {
+    map.easeTo({
+      center: [last.lon, last.lat],
+      zoom: Math.max(map.getZoom(), 8)
+    });
+  }
+
+  return true;
+}
+
+const dragHandle = el("dragHandle");
+let dragging = false;
+let dragOffX = 0, dragOffY = 0;
+
+dragHandle.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  panel.setPointerCapture(e.pointerId);
+
+  const rect = panel.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+});
+
+panel.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+
+  let x = e.clientX - dragOffX;
+  let y = e.clientY - dragOffY;
+
+  const maxX = window.innerWidth - panel.offsetWidth - 8;
+  const maxY = window.innerHeight - panel.offsetHeight - 8;
+  x = Math.max(8, Math.min(maxX, x));
+  y = Math.max(8, Math.min(maxY, y));
+
+  panel.style.left = x + "px";
+  panel.style.top  = y + "px";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+});
+
+panel.addEventListener("pointerup", () => { dragging = false; });
+panel.addEventListener("pointercancel", () => { dragging = false; });
+
+let audioCtx, masterGain, musicStarted = false;
+let musicNodes = [];
+let chordTimer = null;
+let musicFilter = null;
+
+function stopLoopTimers() {
+  if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
+}
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+let currentMood = 5;
+let selectedMood = 5;
+
+function getTransposeSemitones(){
+  const t = clamp(currentMood / 10, 0, 1);
+  return Math.round(lerp(-4, 4, t));
+}
+function pitchShiftFactor(){
+  const st = getTransposeSemitones();
+  return Math.pow(2, st / 12);
+}
+
+function fadeOutMusic(seconds = 2.6) {
+  if (!audioCtx || !masterGain) return;
+
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(0.0001, now + seconds);
+
+  setTimeout(() => {
+    try { stopLoopTimers(); } catch {}
+    for (const n of musicNodes) {
+      try { n.stop && n.stop(); } catch {}
+      try { n.disconnect && n.disconnect(); } catch {}
+    }
+    musicNodes = [];
+    musicStarted = false;
+  }, (seconds + 0.3) * 1000);
+}
+
+function updateMusicParams() {
+  if (!audioCtx || !masterGain || !musicFilter) return;
+
+  const t = clamp(currentMood / 10, 0, 1);
+  const targetVol = lerp(0.16, 0.24, t);
+  const targetCutoff = lerp(700, 2200, t);
+
+  const now = audioCtx.currentTime;
+
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setTargetAtTime(targetVol, now, 0.12);
+
+  musicFilter.frequency.cancelScheduledValues(now);
+  musicFilter.frequency.setTargetAtTime(targetCutoff, now, 0.12);
+}
+
+function getChordPalette() {
+  const low = [
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [146.83, 174.61, 220.00],
+    [164.81, 246.94, 329.63]
+  ];
+  const mid = [
+    [261.63, 329.63, 392.00],
+    [220.00, 261.63, 329.63],
+    [174.61, 220.00, 261.63],
+    [196.00, 293.66, 392.00]
+  ];
+  const high = [
+    [261.63, 392.00, 523.25],
+    [196.00, 293.66, 392.00],
+    [220.00, 329.63, 440.00],
+    [174.61, 261.63, 349.23]
+  ];
+  if (currentMood <= 3) return low;
+  if (currentMood <= 7) return mid;
+  return high;
+}
+
+function playAmbientMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.20;
+  masterGain.connect(audioCtx.destination);
+
+  musicFilter = audioCtx.createBiquadFilter();
+  musicFilter.type = "lowpass";
+  musicFilter.frequency.value = 1200;
+  musicFilter.connect(masterGain);
+
+  updateMusicParams();
+
+  function padChord(freqs, start, dur, moodT) {
+    const padPeak = lerp(0.085, 0.13, moodT);
+    const factor = pitchShiftFactor();
+
+    for (const f0 of freqs) {
+      const f = f0 * factor;
+
+      const o = audioCtx.createOscillator();
+      o.type = (moodT < 0.35) ? "sine" : "triangle";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(padPeak, start + 1.1);
+      g.gain.linearRampToValueAtTime(0.0, start + dur);
+
+      o.connect(g).connect(musicFilter);
+      o.start(start);
+      o.stop(start + dur + 0.05);
+      musicNodes.push(o, g);
+    }
+  }
+
+  function arpeggio(freqs, start, moodT) {
+    const step = lerp(0.62, 0.34, moodT);
+    const notes = 8;
+    const pattern = [0, 1, 2, 1];
+    const factor = pitchShiftFactor();
+
+    for (let i = 0; i < notes; i++) {
+      const base = freqs[pattern[i % pattern.length]] * (i % 2 === 0 ? 2 : 1);
+      const f = base * factor;
+
+      const o = audioCtx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = f;
+
+      const g = audioCtx.createGain();
+      const t = start + i * step;
+      const peak = lerp(0.035, 0.06, moodT);
+
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(peak, t + 0.03);
+      g.gain.linearRampToValueAtTime(0, t + step - 0.05);
+
+      o.connect(g).connect(musicFilter);
+      o.start(t);
+      o.stop(t + step);
+      musicNodes.push(o, g);
+    }
+  }
+
+  let idx = 0;
+  function schedule() {
+    const now = audioCtx.currentTime;
+    const moodT = clamp(currentMood / 10, 0, 1);
+    const dur = lerp(9.0, 6.2, moodT);
+
+    const chords = getChordPalette();
+    const freqs = chords[idx % chords.length];
+    const start = now + 0.02;
+
+    padChord(freqs, start, dur, moodT);
+    arpeggio(freqs, start, moodT);
+
+    idx++;
+    chordTimer = setTimeout(schedule, dur * 1000);
+  }
+  schedule();
+}
+
+function iosUnlockHack(ctx){
+  try{
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.start(0);
+    src.stop(0);
+  }catch(e){}
+}
+
+function isAudioRunning(){
+  return !!(audioCtx && audioCtx.state === "running" && musicStarted);
+}
+
+function showSoundButton(show){
+  const row = el("soundRow");
+  if (!row) return;
+  row.style.display = show ? "block" : "none";
+}
+
+function unlockAndStartAudio(){
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      iosUnlockHack(audioCtx);
+    }
+    try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+    if (!musicStarted) playAmbientMusic();
+    try { audioCtx.resume && audioCtx.resume(); } catch(e){}
+
+    if (audioCtx && audioCtx.state === "running") showSoundButton(false);
+    updateMusicParams();
+  } catch(e) {}
+}
+
+function restartMusicIfPossible(){
+  if (audioCtx && audioCtx.state === "running") {
+    if (!musicStarted) playAmbientMusic();
+    showSoundButton(false);
+    updateMusicParams();
+    return;
+  }
+  showSoundButton(true);
+}
+
+(function attachAudioUnlockOnce(){
+  const opts = { capture: true, passive: true, once: true };
+  document.addEventListener("touchstart", unlockAndStartAudio, opts);
+  document.addEventListener("pointerdown", unlockAndStartAudio, opts);
+  document.addEventListener("mousedown", unlockAndStartAudio, opts);
+  document.addEventListener("keydown", unlockAndStartAudio, { capture:true, once:true });
+
+  const mb = el("moodButtons");
+  if (mb) {
+    mb.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
+    mb.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
+  }
+  const bm = el("btnManual");
+  if (bm) {
+    bm.addEventListener("touchstart", unlockAndStartAudio, { passive:true });
+    bm.addEventListener("pointerdown", unlockAndStartAudio, { passive:true });
+  }
+})();
+
+el("btnSound").addEventListener("click", () => {
+  showSoundButton(false);
+  unlockAndStartAudio();
+  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 800);
+});
+
+function soundWatchdog(){
+  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 900);
+  setTimeout(() => { if (!isAudioRunning()) showSoundButton(true); }, 2500);
+}
+
+const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function getCountryFromCoords(lat, lon){
+  try{
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+    const r = await fetch(url, {
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "Mood2Know/1.0 (https://mood2know.com)"
+      }
+    });
+    if (!r.ok) return null;
+
+    const j = await r.json();
+
+    const code = j?.address?.country_code
+      ? j.address.country_code.toUpperCase()
+      : null;
+
+    const name = j?.address?.country || null;
+
+    return { code, name };
+
+  }catch{
+    return null;
+  }
+}
+
+async function getApproxCoordsFromIP(){
+  try{
+    const r = await fetch("https://ipapi.co/json/", {
+      headers: { "Accept": "application/json" }
+    });
+    if (!r.ok) return null;
+
+    const j = await r.json();
+    const lat = Number(j?.latitude);
+    const lon = Number(j?.longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+    return { lat, lon };
+  }catch{
+    return null;
+  }
+}
+
+function fmtInt(n){
+  try { return new Intl.NumberFormat().format(n); }
+  catch { return String(n); }
+}
+
+
+function getStatsPeriodLabel() {
+  const label = document.getElementById("statAvgLabel")?.textContent || "";
+  if (label.includes("last 30 entries")) return "last 30 entries";
+  return "last 24h";
+}
+
+function buildComparisonMessage(userMood){
+  const avgText = document.getElementById("statAvgToday")?.textContent || "—";
+  const avg = Number(avgText);
+  const period = getStatsPeriodLabel();
+
+  if (!Number.isFinite(avg)) {
+    return "✅ Saved. Thank you!";
+  }
+
+  let comparison = "about the same as";
+  if (userMood > avg + 0.3) comparison = "above";
+  else if (userMood < avg - 0.3) comparison = "below";
+
+  if (comparison === "about the same as") {
+    return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10. Your mood is about the same.`;
+  }
+
+  return `✅ Saved. World average (${period}): ${avg.toFixed(1)}/10. Your mood is ${comparison} average.`;
+}
+
+
+async function getStatsDataset() {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: recentData, error: recentError } = await sb
+    .from("mood_entries")
+    .select("mood, country, country_name, created_at")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(50000);
+
+  if (recentError) throw recentError;
+
+  if (recentData && recentData.length > 0) {
+    return {
+      mode: "24h",
+      data: recentData
+    };
+  }
+
+  const { data: fallbackData, error: fallbackError } = await sb
+    .from("mood_entries")
+    .select("mood, country, country_name, created_at")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (fallbackError) throw fallbackError;
+
+  return {
+    mode: "last30",
+    data: fallbackData || []
+  };
+}
+
+function applyStatsLabels(mode) {
+  const elAvgLabel = document.getElementById("statAvgLabel");
+  const elHappyLabel = document.getElementById("statHappyLabel");
+
+  if (mode === "last30") {
+    if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 30 entries):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 30 entries):";
+  } else {
+    if (elAvgLabel) elAvgLabel.textContent = "🌍 Global mood (last 24h):";
+    if (elHappyLabel) elHappyLabel.textContent = "😊 Happiest country (last 24h):";
+  }
+}
+
+async function updateAllStats() {
+  const elAvg = document.getElementById("statAvgToday");
+  const elTodayCount = document.getElementById("statTodayCount");
+  const elCountryCount = document.getElementById("statCountryCount");
+  const elHappy = document.getElementById("statHappiest");
+
+  if (!elAvg || !elTodayCount || !elCountryCount || !elHappy) return;
+
+  try {
+    const { data, mode } = await getStatsDataset();
+
+    applyStatsLabels(mode);
+
+    if (!data || data.length === 0) {
+      elAvg.textContent = "—";
+      elTodayCount.textContent = "—";
+      elCountryCount.textContent = "—";
+      elHappy.textContent = "—";
+      elHappy.classList.remove("blink");
+      return;
+    }
+
+    let sum = 0;
+    let count = 0;
+
+    for (const r of data) {
+      const v = Number(r.mood);
+      if (Number.isFinite(v)) {
+        sum += v;
+        count++;
+      }
+    }
+
+    elAvg.textContent = count ? (sum / count).toFixed(1) : "—";
+
+    const countries = new Set();
+    for (const r of data) {
+      if (r.country) countries.add(r.country);
+    }
+
+    elTodayCount.textContent = fmtInt(data.length);
+    elCountryCount.textContent = fmtInt(countries.size);
+
+    const byCountry = new Map();
+
+    for (const r of data) {
+      const code = r.country;
+      const v = Number(r.mood);
+
+      if (!code || !Number.isFinite(v)) continue;
+
+      const label = (r.country_name && r.country_name.trim())
+        ? r.country_name.trim()
+        : code;
+
+      const cur = byCountry.get(code) || { sum: 0, count: 0, label };
+      cur.sum += v;
+      cur.count += 1;
+
+      if (r.country_name && r.country_name.trim()) {
+        cur.label = r.country_name.trim();
+      }
+
+      byCountry.set(code, cur);
+    }
+
+    let best = null;
+    for (const [code, agg] of byCountry.entries()) {
+      if (!agg.count) continue;
+
+      const avg = agg.sum / agg.count;
+      if (!best || avg > best.avg) {
+        best = { code, label: agg.label, avg };
+      }
+    }
+
+    if (best) {
+      elHappy.textContent = best.label;
+      elHappy.classList.add("blink");
+    } else {
+      elHappy.textContent = "—";
+      elHappy.classList.remove("blink");
+    }
+
+  } catch (e) {
+    elAvg.textContent = "—";
+    elTodayCount.textContent = "—";
+    elCountryCount.textContent = "—";
+    elHappy.textContent = "—";
+    elHappy.classList.remove("blink");
+    applyStatsLabels("24h");
+    console.warn("STATS error:", e);
+  }
+}
+
+function getAnonId(){
+  const key = "mood_anon_id";
+  let v = localStorage.getItem(key);
+  if(!v){
+    v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem(key, v);
+  }
+  return v;
+}
+
+function dayKeyUTC(d){
+  const x = new Date(d);
+  x.setUTCHours(0,0,0,0);
+  return x.toISOString().slice(0,10);
+}
+
+function drawTrend(labels, values){
+  const c = el("trendCanvas");
+  const note = el("trendNote");
+  if (!c || !note) return;
+
+  const ctx = c.getContext("2d");
+  const w = c.width, h = c.height;
+  ctx.clearRect(0,0,w,h);
+
+  ctx.globalAlpha = 0.12;
+  for(let i=1;i<=4;i++){
+    const y = (h*i)/5;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const pts = values
+    .map((v,i) => ({ i, v }))
+    .filter(p => Number.isFinite(p.v));
+
+  if (pts.length < 2){
+    note.textContent = "Not enough data yet. Come back tomorrow 🙂";
+    return;
+  }
+
+  const minV = 1, maxV = 10;
+  const padX = 10, padY = 10;
+  const xStep = (w - padX*2) / (labels.length - 1);
+
+  const yOf = (v) => {
+    const t = (v - minV) / (maxV - minV);
+    return (h - padY) - t * (h - padY*2);
+  };
+
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  let started = false;
+  for(let i=0;i<labels.length;i++){
+    const v = values[i];
+    if (!Number.isFinite(v)) { started = false; continue; }
+    const x = padX + i*xStep;
+    const y = yOf(v);
+    if (!started) { ctx.moveTo(x,y); started = true; }
+    else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  for(let i=0;i<labels.length;i++){
+    const v = values[i];
+    if (!Number.isFinite(v)) continue;
+    const x = padX + i*xStep;
+    const y = yOf(v);
+    ctx.beginPath();
+    ctx.arc(x,y,4.2,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  const last = pts[pts.length-1].v;
+  const first = pts[0].v;
+  const delta = (last - first);
+  const arrow = delta > 0.2 ? "↗" : delta < -0.2 ? "↘" : "→";
+  note.textContent = `7-day change: ${delta.toFixed(1)} ${arrow}`;
+}
+
+async function updateTrend(){
+  const note = el("trendNote");
+  try{
+    const anonId = getAnonId();
+    const now = new Date();
+    const start = new Date(now);
+    start.setUTCDate(start.getUTCDate() - 6);
+    start.setUTCHours(0,0,0,0);
+
+    const { data, error } = await sb
+      .from("mood_entries")
+      .select("mood, created_at")
+      .eq("anon_id", anonId)
+      .gte("created_at", start.toISOString())
+      .order("created_at", { ascending: true })
+      .limit(5000);
+
+    if (error) throw error;
+
+    const labels = [];
+    const dayKeys = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(start);
+      d.setUTCDate(start.getUTCDate() + i);
+      labels.push(d.toISOString().slice(5,10));
+      dayKeys.push(d.toISOString().slice(0,10));
+    }
+
+    const byDay = new Map();
+    for (const r of (data || [])){
+      if (!r.created_at) continue;
+      const k = dayKeyUTC(r.created_at);
+      const v = Number(r.mood);
+      if (!Number.isFinite(v)) continue;
+      const cur = byDay.get(k) || { sum:0, count:0 };
+      cur.sum += v; cur.count += 1;
+      byDay.set(k, cur);
+    }
+
+    const values = dayKeys.map(k => {
+      const agg = byDay.get(k);
+      return agg ? (agg.sum / agg.count) : NaN;
+    });
+
+    drawTrend(labels, values);
+  }catch(e){
+    if (note) note.textContent = "Trend unavailable.";
+  }
+}
+
+let manualPickActive = false;
+let manualMarker = null;
+let pendingManualCoords = null;
+
+let isSaving = false;
+let lastSaveAt = 0;
+
+function moodPhrase(v){
+  v = Number(v);
+  if (v <= 2) return "I feel bad.";
+  if (v <= 4) return "I feel low.";
+  if (v <= 6) return "I feel OK.";
+  if (v <= 8) return "I feel good.";
+  return "I feel great.";
+}
+
+function updateFeeling(v){
+  const mf = el("moodFeeling");
+  if (!mf) return;
+
+  if (isPhone) {
+    mf.textContent = "";
+    return;
+  }
+
+  if (v === undefined || v === null) {
+    mf.textContent = "I feel...";
+  } else {
+    mf.textContent = moodPhrase(v).replace(/\.$/, "");
+  }
+}
+function renderMoodButtons(){
+  const wrap = el("moodButtons");
+  if (!wrap) return;
+
+  wrap.innerHTML = "";
+  for (let v = 1; v <= 10; v++){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "moodBtn";
+    b.textContent = String(v);
+    b.setAttribute("aria-pressed", v === selectedMood ? "true" : "false");
+
+    const bg = moodFillColor(v);
+    b.style.background = bg;
+    b.style.color = textColorForBg(bg);
+
+    b.addEventListener("mouseenter", () => updateFeeling(v));
+    b.addEventListener("mouseleave", () => updateFeeling());
+    b.addEventListener("focus", () => updateFeeling(v));
+    b.addEventListener("blur", () => updateFeeling());
+
+    b.addEventListener("click", () => {
+      selectedMood = v;
+      currentMood = v;
+
+      const mv = el("moodValue");
+      if (mv) mv.textContent = String(v);
+      updateFeeling(v);
+      updateMusicParams();
+
+      wrap.querySelectorAll(".moodBtn").forEach(btn => {
+        btn.setAttribute("aria-pressed", btn.textContent === String(v) ? "true" : "false");
+      });
+
+      autoSaveWithGeoOrManual();
+    });
+
+    wrap.appendChild(b);
+  }
+}
+
+function setManualReady(isReady){
+  const btn = el("btnManual");
+  if (!btn) return;
+  if (isReady) btn.classList.remove("secondary");
+  else btn.classList.add("secondary");
+}
+
+function stopManualPick() {
+  manualPickActive = false;
+  map.getCanvas().style.cursor = "";
+  map.off("click", onManualMapClick);
+
+  pendingManualCoords = null;
+  setManualReady(false);
+}
+
+function startManualPick() {
+  showManualButton(true);
+  panel.className = "panel-manual-micro";
+
+setMainMapVisible(true);
+setIntroBackground(false);
+  
+pendingManualCoords = null;
+  setManualReady(false);
+
+  map.stop();
+
+  // Se fixer sur l'ancienne position si disponible
+  const last = loadLastLoc();
+  if (last) {
+    map.jumpTo({
+      center: [last.lon, last.lat],
+      zoom: Math.max(map.getZoom(), 8)
+    });
+  }
+
+  if (manualPickActive) return;
+  manualPickActive = true;
+
+  map.getCanvas().style.cursor = "crosshair";
+  map.off("click", onManualMapClick);
+  map.on("click", onManualMapClick);
+
+  setAppMessage("Move the map/tag if needed, then confirm.");
+}
+
+function onManualMapClick(e) {
+  map.stop();
+
+  const coords = { lon: e.lngLat.lng, lat: e.lngLat.lat };
+  pendingManualCoords = coords;
+
+  if (!manualMarker) {
+    manualMarker = new maplibregl.Marker({ color: "#111" })
+      .setLngLat([coords.lon, coords.lat])
+      .addTo(map);
+  } else {
+    manualMarker.setLngLat([coords.lon, coords.lat]);
+  }
+
+  setManualReady(true);
+  setAppMessage("Tap the button to confirm this location.");
+}
+
+function prepareApproxManualPick(coords, msg){
+  showManualButton(true);
+  panel.className = "panel-manual-micro";
+
+  setMainMapVisible(true);
+  setIntroBackground(false);
+
+  pendingManualCoords = coords;
+
+  map.stop();
+  map.jumpTo({
+    center: [coords.lon, coords.lat],
+    zoom: Math.max(map.getZoom(), 8)
+  });
+
+  if (!manualPickActive) {
+    manualPickActive = true;
+    map.getCanvas().style.cursor = "crosshair";
+    map.off("click", onManualMapClick);
+    map.on("click", onManualMapClick);
+  }
+
+  if (!manualMarker) {
+    manualMarker = new maplibregl.Marker({ color: "#111" })
+      .setLngLat([coords.lon, coords.lat])
+      .addTo(map);
+  } else {
+    manualMarker.setLngLat([coords.lon, coords.lat]);
+  }
+
+  setManualReady(true);
+  setAppMessage("Move the map/tag if needed, then confirm.");
+}
+
+function addPrivacyBlur(coords, maxMeters = 300) {
+  const lat = Number(coords.lat);
+  const lon = Number(coords.lon);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return coords;
+
+  const distance = Math.random() * maxMeters;
+  const angle = Math.random() * 2 * Math.PI;
+
+  const dx = distance * Math.cos(angle);
+  const dy = distance * Math.sin(angle);
+
+  const earthRadius = 6378137;
+
+  const blurredLat = lat + (dy / earthRadius) * (180 / Math.PI);
+  const blurredLon = lon + (dx / earthRadius) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
+
+  return {
+    lat: blurredLat,
+    lon: blurredLon
+  };
+}
+
+async function saveMoodAtCoords(coords) {
+  const mood = Number(selectedMood);
+  const anonId = getAnonId();
+
+  setAppMessage("Saving your mood…");
+
+  const blurredCoords = addPrivacyBlur(coords, 300);
+
+  const c = await getCountryFromCoords(blurredCoords.lat, blurredCoords.lon);
+
+  const country = c?.code || null;
+  const country_name = c?.name || null;
+
+const { data, error } = await sb.functions.invoke("submit-mood", {
+  body: {
+    anon_id: anonId,
+    mood,
+    lon: blurredCoords.lon,
+    lat: blurredCoords.lat,
+    country,
+    country_name
+  }
+});
+
 if (error) {
   let message = "Save failed. Please try again.";
 
@@ -29,3 +1819,315 @@ if (error) {
   console.warn("SAVE error:", error);
   return false;
 }
+
+  saveLastLoc(blurredCoords);
+
+fadeOutMusic(2.6);
+revealedThisSession = true;
+
+collapseAbout();
+
+setAppMessage("Thank you! Loading the world’s mood…");
+
+// On montre la vraie carte seulement maintenant
+setMainMapVisible(true);
+
+// On place directement la carte sans animation
+map.stop();
+map.jumpTo({
+  center: [blurredCoords.lon, blurredCoords.lat],
+  zoom: Math.max(map.getZoom(), 8)
+});
+
+// Puis on masque l'intro animée
+setIntroBackground(false);
+
+setTimeout(async () => {
+  await refreshPoints();
+  await updateAllStats();  
+  updateTrend();
+  showCompact(buildComparisonMessage(mood));
+}, 250);
+
+  return true;
+}
+
+async function autoSaveWithGeoOrManual(){
+  const now = Date.now();
+  if (isSaving) return;
+  if (now - lastSaveAt < 650) return;
+
+  isSaving = true;
+  lastSaveAt = now;
+
+  showManualButton(false);
+  stopManualPick();
+
+  setAppMessage("Locating…");
+
+  if (!navigator.geolocation) {
+    const approx = await getApproxCoordsFromIP();
+
+    if (approx) {
+      prepareApproxManualPick(
+        approx,
+        "Approximate location found. Adjust if needed, then confirm."
+      );
+    } else {
+      setAppMessage("Unable to detect location. Please set position manually.");
+      startManualPick();
+    }
+
+    isSaving = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      await saveMoodAtCoords(coords);
+      isSaving = false;
+    },
+    async (err) => {
+      const approx = await getApproxCoordsFromIP();
+
+      if (approx) {
+        prepareApproxManualPick(
+          approx,
+          "Browser geolocation was refused. Approximate location found — adjust if needed, then confirm."
+        );
+      } else {
+        setAppMessage("Geolocation error: " + err.message + ". Please set position manually.");
+        startManualPick();
+      }
+
+      isSaving = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+el("btnManual").onclick = async () => {
+  if (!manualPickActive) {
+    startManualPick();
+    return;
+  }
+  if (!pendingManualCoords) return;
+
+  const coords = pendingManualCoords;
+  stopManualPick();
+  await saveMoodAtCoords(coords);
+};
+
+el("btnExpand").onclick = () => {
+  stopManualPick();
+  if (manualMarker) { manualMarker.remove(); manualMarker = null; }
+
+  showApp();
+  setAppMessage("");
+  restartMusicIfPossible();
+};
+
+const FEEDBACK_MAX_WORDS = 250;
+function countWords(s){ return (s.trim().match(/\S+/g) || []).length; }
+
+const fbOverlay = el("fbOverlay");
+const fbText = el("fbText");
+const fbMsg  = el("fbMsg");
+const fbCount = el("fbCount");
+const btnFbSend = el("btnFbSend");
+
+function updateFbCounter(){
+  const chars = fbText.value.length;
+  const words = countWords(fbText.value);
+  fbCount.textContent = `${chars} / 5000 • ${words} / ${FEEDBACK_MAX_WORDS} words`;
+}
+
+function openFeedbackModal(){
+  fbMsg.textContent = "";
+  fbText.value = "";
+  fbOverlay.style.display = "flex";
+  fbOverlay.setAttribute("aria-hidden", "false");
+  updateFbCounter();
+  setTimeout(() => fbText.focus(), 50);
+}
+function closeFeedbackModal(){
+  fbOverlay.style.display = "none";
+  fbOverlay.setAttribute("aria-hidden", "true");
+}
+
+fbOverlay.addEventListener("click", (e) => { if (e.target === fbOverlay) closeFeedbackModal(); });
+el("btnFbCancel").onclick = closeFeedbackModal;
+fbText.addEventListener("input", updateFbCounter);
+
+el("btnComments").onclick = () => openFeedbackModal();
+
+btnFbSend.onclick = async () => {
+  btnFbSend.disabled = true;
+  fbMsg.textContent = "Sending…";
+
+  const message = fbText.value.trim();
+  if (message.length < 2) {
+    fbMsg.textContent = "Please write a message.";
+    btnFbSend.disabled = false;
+    return;
+  }
+  const words = countWords(message);
+  if (words > FEEDBACK_MAX_WORDS) {
+    fbMsg.textContent = `Too many words (${words}). Max is ${FEEDBACK_MAX_WORDS}.`;
+    btnFbSend.disabled = false;
+    return;
+  }
+
+  const { error } = await sb.from("mood_feedback").insert({
+    anon_id: getAnonId(),
+    message
+  });
+
+  if (error) {
+    const raw = (error.message || "") + " " + (error.details || "") + " " + (error.hint || "");
+    const isDuplicate =
+      error.code === "23505" ||
+      raw.includes("duplicate key value") ||
+      raw.toLowerCase().includes("one_per_day");
+
+    fbMsg.textContent = isDuplicate
+      ? "Only one comment per day please!"
+      : "Unable to send comment. Please try again.";
+
+    console.warn("FEEDBACK error:", error);
+    btnFbSend.disabled = false;
+    return;
+  }
+
+  fbMsg.textContent = "✅ Thank you for your feedback!";
+  setTimeout(() => closeFeedbackModal(), 700);
+  btnFbSend.disabled = false;
+};
+
+const shareOverlay = el("shareOverlay");
+
+function openShareModal(){
+  shareOverlay.style.display = "flex";
+  shareOverlay.setAttribute("aria-hidden", "false");
+}
+function closeShareModal(){
+  shareOverlay.style.display = "none";
+  shareOverlay.setAttribute("aria-hidden", "true");
+}
+
+shareOverlay.addEventListener("click", (e) => { if (e.target === shareOverlay) closeShareModal(); });
+el("btnShareClose").onclick = closeShareModal;
+
+function buildShareLinks(){
+  const url = "https://mood2know.com/";
+  const text = "Mood2Know — the world’s emotional weather in one click";
+
+  const u = encodeURIComponent(url);
+  const t = encodeURIComponent(text);
+
+  el("shareWhatsApp").href = `https://wa.me/?text=${t}%20${u}`;
+  el("shareReddit").href   = `https://www.reddit.com/submit?url=${u}&title=${t}`;
+  el("shareX").href        = `https://twitter.com/intent/tweet?text=${t}&url=${u}`;
+  el("shareFacebook").href = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+}
+
+async function tryNativeShare(){
+  const url = "https://mood2know.com/";
+  const text = "Mood2Know — the world’s emotional weather in one click";
+
+  if (!navigator.share) return false;
+  try{
+    await navigator.share({ title: "Mood2Know", text, url });
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+el("btnShare").onclick = async () => {
+  buildShareLinks();
+  const did = await tryNativeShare();
+  if (!did) openShareModal();
+};
+
+map.on("load", async () => {
+  ensureMoodImages();
+  initPointsSourceAndLayers();
+  clearMarkers();
+  revealedThisSession = false;
+
+  setIntroBackground(true);
+  setMainMapVisible(false);
+
+  showApp();
+  showManualButton(false);
+  setManualReady(false);
+
+  selectedMood = 5;
+  currentMood = 5;
+  updateFeeling();
+  renderMoodButtons();
+  updateMusicParams();
+
+  soundWatchdog();
+  if (!isAudioRunning()) showSoundButton(true);
+
+  updateAllStats();
+  updateTrend();
+});
+</script>
+
+<script>
+(function () {
+  const blocks = Array.from(document.querySelectorAll('.m2k-text[data-lang]'));
+  const summaryLabel = document.querySelector('[data-i18n="summary"]');
+  const buttons = Array.from(document.querySelectorAll('.m2k-lang-btn[data-set-lang]'));
+
+  function pickDefaultLang() {
+    const saved = localStorage.getItem('m2k_lang');
+    return saved || 'en';
+  }
+
+  function setLang(lang) {
+    blocks.forEach(el => el.style.display = (el.dataset.lang === lang ? 'block' : 'none'));
+
+    if (summaryLabel) {
+      const titles = {
+        en: 'Why Mood2Know?',
+        fr: 'Pourquoi Mood2Know ?',
+        es: '¿Por qué Mood2Know?',
+        it: 'Perché Mood2Know?',
+        de: 'Warum Mood2Know?',
+        zh: '为什么选择 Mood2Know？'
+      };
+      summaryLabel.textContent = titles[lang] || titles.en;
+    }
+
+    buttons.forEach(btn => {
+      const on = btn.dataset.setLang === lang;
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    localStorage.setItem('m2k_lang', lang);
+  }
+
+  buttons.forEach(btn => btn.addEventListener('click', () => setLang(btn.dataset.setLang)));
+  setLang(pickDefaultLang());
+})();
+</script>
+
+<script>
+(function () {
+  if (location.hash === '#about') {
+    const details = document.getElementById('m2kDetails');
+    if (details) {
+      details.open = true;
+      details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
