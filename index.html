@@ -1777,22 +1777,29 @@ async function saveMoodAtCoords(coords) {
   const country = c?.code || null;
   const country_name = c?.name || null;
 
-  const { error } = await sb
-    .from("mood_entries")
-    .insert([{
-      anon_id: anonId,
-      mood,
-      lon: blurredCoords.lon,
-      lat: blurredCoords.lat,
-      country,
-      country_name
-    }]);
+const { data, error } = await sb.functions.invoke("submit-mood", {
+  body: {
+    anon_id: anonId,
+    mood,
+    lon: blurredCoords.lon,
+    lat: blurredCoords.lat,
+    country,
+    country_name
+  }
+});
 
   if (error) {
-    setAppMessage("Save failed: " + (error.message || "Unknown error"));
-    console.warn("SAVE error:", error);
-    return false;
-  }
+    const msg = String(error.message || "");
+
+    if (msg.includes("429")) {
+      setAppMessage("Please wait 1 minute before sending another mood.");
+    } else {
+      setAppMessage("Save failed: " + (error.message || "Unknown error"));
+    }
+
+  console.warn("SAVE error:", error);
+  return false;
+}
 
   saveLastLoc(blurredCoords);
 
