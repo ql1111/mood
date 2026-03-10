@@ -661,7 +661,7 @@ function setStopIntroButtonVisible(visible){
   btn.classList.toggle("is-hidden", !visible);
 }
 
-function stopIntroAnimationAndShowMap(){
+async function stopIntroAnimationAndShowMap(){
   map.stop();
 
   setMainMapVisible(true);
@@ -671,6 +671,10 @@ function stopIntroAnimationAndShowMap(){
   showApp();
   showManualButton(false);
   setAppMessage("");
+
+  revealedThisSession = true;
+  await refreshPoints();
+  await updateAllStats();
 }
 
 function lerp(a,b,t){ return a + (b - a) * t; }
@@ -900,8 +904,8 @@ async function refreshPoints(){
 const el = id => document.getElementById(id);
 const panel = el("panel");
 
-el("btnStopIntro").addEventListener("click", () => {
-  stopIntroAnimationAndShowMap();
+el("btnStopIntro").addEventListener("click", async () => {
+  await stopIntroAnimationAndShowMap();
 });
 
 const isPhone = window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 520px)").matches;
