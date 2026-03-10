@@ -456,7 +456,7 @@
 </div>
 
 <div class="topStatsLine">
-  <span class="topStatsLeft" id="statCountLabel">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries</span>
+  <span class="topStatsLeft" id="statCountLabel">📍 <span id="statTodayCount">—</span> moods from <span id="statCountryCount">—</span> countries (last 24h)</span>
 </div>
 
 <div class="topStatsLine">
@@ -1443,7 +1443,7 @@ async function updateAllStats() {
       if (r.country) countries.add(r.country);
     }
 
-    elTodayCount.textContent = fmtInt(data.length);
+    elTodayCount.textContent = (mode === "24h" && data.length >= 1000) ? ">1000" : fmtInt(data.length);
     elCountryCount.textContent = fmtInt(countries.size);
 
     const byCountry = new Map();
