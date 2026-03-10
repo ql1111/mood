@@ -1303,7 +1303,7 @@ async function getStatsDataset() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const { data: recentData, error: recentError } = await sb
-    .from("mood_entries")
+    .from("mood_public_entries")
     .select("mood, country, country_name, created_at")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
@@ -1319,7 +1319,7 @@ async function getStatsDataset() {
   }
 
   const { data: fallbackData, error: fallbackError } = await sb
-    .from("mood_entries")
+    .from("mood_public_entries")
     .select("mood, country, country_name, created_at")
     .order("created_at", { ascending: false })
     .limit(30);
@@ -1530,7 +1530,7 @@ async function updateTrend(){
     start.setUTCHours(0,0,0,0);
 
     const { data, error } = await sb
-      .from("mood_entries")
+      .from("mood_public_entries")
       .select("mood, created_at")
       .eq("anon_id", anonId)
       .gte("created_at", start.toISOString())
