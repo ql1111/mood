@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr" style="--vh: 9.55px;"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mood2Know — Replay Auto WOW</title>
+  <meta name="robots" content="noindex,nofollow">
+
+  <link rel="stylesheet" href="maplibre-gl.css">
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font: 16px system-ui;
+      background: #000;
+    }
+
+    :root { --vh: 1vh; }
+
+    #map {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: calc(var(--vh) * 100);
+    }
+
+    .sr-only{
+      position:absolute;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border:0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 class="sr-only">Mood2Know – Replay automatique WOW</h1>
+  <div id="map" class="maplibregl-map"><div class="maplibregl-canvas-container maplibregl-interactive maplibregl-touch-drag-pan maplibregl-touch-zoom-rotate"><canvas class="maplibregl-canvas" tabindex="0" aria-label="Map" role="region" width="1920" height="955" style="width: 1920px; height: 955px;"></canvas></div><div class="maplibregl-control-container"><div class="maplibregl-ctrl-top-left "></div><div class="maplibregl-ctrl-top-right "></div><div class="maplibregl-ctrl-bottom-left "></div><div class="maplibregl-ctrl-bottom-right "><details class="maplibregl-ctrl maplibregl-ctrl-attrib maplibregl-compact maplibregl-compact-show" open=""><summary class="maplibregl-ctrl-attrib-button" title="Toggle attribution" aria-label="Toggle attribution"></summary><div class="maplibregl-ctrl-attrib-inner"><a href="https://maplibre.org/" target="_blank">MapLibre</a> | <a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank">© OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a></div></details></div></div></div>
+
+  <script src="maplibre-gl.js"></script>
+  <script src="supabase-js@2"></script>
+
+  <script>
+    /* =========================================================================
+       0) MOBILE VIEWPORT FIX
+       ========================================================================= */
+    function setVh() {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    }
+    window.addEventListener('resize', setVh);
+    setVh();
+
+    /* =========================================================================
+       1) MAP SETUP
+       ========================================================================= */
+
+   const map = new maplibregl.Map({
+     container: "map",
+     style: "https://tiles.openfreemap.org/styles/liberty",
+     center: [0,20],
+     zoom: 2
+   });
+
+    /* =========================================================================
+       2) MOOD ICONS (0..10)
+       ========================================================================= */
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function lerpColor(c1, c2, t) {
+      const r = Math.round(lerp(c1[0], c2[0], t));
+      const g = Math.round(lerp(c1[1], c2[1], t));
+      const b = Math.round(lerp(c1[2], c2[2], t));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function moodImageData(level, size = 96) {
+      const t = Math.max(0, Math.min(1, level / 10));
+      const red = [215, 25, 28];
+      const yellow = [255, 255, 191];
+      const green = [26, 150, 65];
+
+      const fill = (t < 0.5)
+        ? lerpColor(red, yellow, t / 0.5)
+        : lerpColor(yellow, green, (t - 0.5) / 0.5);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = size * 0.42;
+
+      ctx.beginPath();
+      ctx.arc(cx, cy + 3, r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.lineWidth = Math.max(3, size * 0.04);
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.stroke();
+
+      const eyeY = cy - size * 0.10;
+      const eyeDX = size * 0.14;
+      const eyeR = size * 0.04;
+
+      ctx.beginPath();
+      ctx.arc(cx - eyeDX, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.arc(cx + eyeDX, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,0.75)";
+      ctx.fill();
+
+const browBaseY = eyeY - size * lerp(0.07, 0.12, t);
+const browLift  = size * lerp(0.003, 0.018, t);
+const browHalfW = size * 0.065;
+const browArch  = size * lerp(0.01, 0.028, t);
+
+ctx.lineWidth = Math.max(3, size * 0.035);
+ctx.strokeStyle = "rgba(0,0,0,0.55)";
+ctx.lineCap = "round";
+
+const leftBrowX = cx - eyeDX;
+const rightBrowX = cx + eyeDX;
+
+ctx.beginPath();
+ctx.moveTo(leftBrowX - browHalfW, browBaseY - browLift);
+ctx.quadraticCurveTo(
+  leftBrowX,
+  browBaseY - browArch - browLift,
+  leftBrowX + browHalfW,
+  browBaseY + browLift * 0.35
+);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(rightBrowX - browHalfW, browBaseY + browLift * 0.35);
+ctx.quadraticCurveTo(
+  rightBrowX,
+  browBaseY - browArch - browLift,
+  rightBrowX + browHalfW,
+  browBaseY - browLift
+);
+ctx.stroke();
+
+      const mouthY = cy + size * 0.12;
+      const mouthW = size * 0.26;
+      const curvature = lerp(-1, 1, t);
+
+      ctx.beginPath();
+      ctx.moveTo(cx - mouthW, mouthY);
+      ctx.quadraticCurveTo(cx, mouthY + curvature * size * 0.12, cx + mouthW, mouthY);
+      ctx.strokeStyle = "rgba(0,0,0,0.70)";
+      ctx.lineWidth = Math.max(4, size * 0.05);
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      const img = ctx.getImageData(0, 0, size, size);
+      return { width: img.width, height: img.height, data: img.data };
+    }
+
+    function ensureMoodImages() {
+      for (let lvl = 0; lvl <= 10; lvl++) {
+        const name = `mood-${lvl}`;
+        if (!map.hasImage(name)) {
+          map.addImage(name, moodImageData(lvl, 96));
+        }
+      }
+    }
+
+    /* =========================================================================
+       3) POINTS SOURCE + LAYERS
+       ========================================================================= */
+    function initPointsSourceAndLayers() {
+      if (map.getSource("points")) return;
+
+      map.addSource("points", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+        cluster: true,
+        clusterRadius: 60,
+        clusterMaxZoom: 14,
+        clusterProperties: {
+          sum: ["+", ["get", "value"]],
+          count: ["+", 1]
+        }
+      });
+
+      const avgRoundedClamped = [
+        "case",
+        ["<", ["round", ["/", ["get","sum"], ["get","count"]]], 0], 0,
+        [">", ["round", ["/", ["get","sum"], ["get","count"]]], 10], 10,
+        ["round", ["/", ["get","sum"], ["get","count"]]]
+      ];
+
+      map.addLayer({
+        id: "clusters-mood",
+        type: "symbol",
+        source: "points",
+        filter: ["has", "point_count"],
+        layout: {
+          "icon-image": ["concat", "mood-", ["to-string", avgRoundedClamped]],
+          "icon-size": ["step", ["get","point_count"], 0.65, 10, 0.75, 50, 0.9, 200, 1.05, 1000, 1.2],
+          "icon-allow-overlap": true,
+          "text-field": ["to-string", ["get","point_count"]],
+          "text-size": 12,
+          "text-offset": [0, 1.55],
+          "text-allow-overlap": true,
+          "text-anchor": "top"
+        },
+        paint: {
+          "text-color": "rgba(0,0,0,0.75)",
+          "text-halo-color": "rgba(255,255,255,0.9)",
+          "text-halo-width": 1
+        }
+      });
+
+      map.addLayer({
+        id: "points-mood",
+        type: "symbol",
+        source: "points",
+        filter: ["!", ["has", "point_count"]],
+        layout: {
+          "icon-image": [
+            "concat", "mood-",
+            ["to-string",
+              ["case",
+                ["<", ["round", ["get","value"]], 0], 0,
+                [">", ["round", ["get","value"]], 10], 10,
+                ["round", ["get","value"]]
+              ]
+            ]
+          ],
+          "icon-size": 0.55,
+          "icon-allow-overlap": true
+        }
+      });
+
+      map.on("click", "clusters-mood", (e) => {
+        const f = e.features[0];
+        map.getSource("points").getClusterExpansionZoom(
+          f.properties.cluster_id,
+          (err, zoom) => {
+            if (err) return;
+            map.easeTo({ center: f.geometry.coordinates, zoom });
+          }
+        );
+      });
+
+      map.on("mouseenter", "clusters-mood", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
+      map.on("mouseleave", "clusters-mood", () => {
+        map.getCanvas().style.cursor = "";
+      });
+    }
+
+    /* =========================================================================
+       4) SUPABASE CONFIG
+       ========================================================================= */
+    const SUPABASE_URL = "https://ugrmxzdhevqrgftlxfnp.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncm14emRoZXZxcmdmdGx4Zm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyODQ3OTQsImV4cCI6MjA4NDg2MDc5NH0.WgTj-6ADFEMrCgPNxeQZvknBBJI1c9uDY9_8Qlkqu4w"; // remplace par ta vraie clé complète
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    /* =========================================================================
+       5) CONFIG
+       ========================================================================= */
+    const MAX_POINTS = 20000;
+    const START_FROM_UTC = "2026-02-01T00:00:00.000Z";
+
+    const FLY_DURATION = 2600;
+    const HOLD_DURATION = 1600;
+    const MIN_ZONE_DISTANCE_KM = 900;
+    const MAX_CAMERA_STOPS = 24;
+
+    let rows = [];
+    let feats = [];
+
+    let playing = false;
+    let stopIndex = 0;
+    let flyTimeout = null;
+
+    let cameraStops = [];
+
+    /* =========================================================================
+       6) HELPERS
+       ========================================================================= */
+    function haversineKm(a, b) {
+      const toRad = (x) => x * Math.PI / 180;
+      const R = 6371;
+      const dLat = toRad(b[1] - a[1]);
+      const dLon = toRad(b[0] - a[0]);
+      const lat1 = toRad(a[1]);
+      const lat2 = toRad(b[1]);
+      const s =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function toFeature(r) {
+      return {
+        type: "Feature",
+        properties: {
+          value: Number(r.mood),
+          t: new Date(r.created_at).getTime()
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [Number(r.lon), Number(r.lat)]
+        }
+      };
+    }
+
+    function setAllPoints() {
+      const src = map.getSource("points");
+      if (!src) return;
+      src.setData({
+        type: "FeatureCollection",
+        features: feats
+      });
+    }
+
+    function resetCamera() {
+      map.jumpTo({
+        center: [0, 20],
+        zoom: 2,
+        bearing: 0,
+        pitch: 0
+      });
+    }
+
+    function buildCameraStops() {
+      if (!rows.length) return [];
+
+      const sampled = [];
+      const shuffledRows = shuffle(rows);
+
+      for (const r of shuffledRows) {
+        const candidate = [Number(r.lon), Number(r.lat)];
+
+        const tooClose = sampled.some(s => haversineKm(s.center, candidate) < MIN_ZONE_DISTANCE_KM);
+        if (tooClose) continue;
+
+        sampled.push({
+          center: candidate,
+          zoom: 3.8 + (sampled.length % 4) * 0.08,
+          pitch: 28 + (sampled.length % 3) * 3,
+          bearing: ((sampled.length * 17) % 50) - 25
+        });
+
+        if (sampled.length >= MAX_CAMERA_STOPS) break;
+      }
+
+      return sampled;
+    }
+
+    /* =========================================================================
+       7) CAMERA TOUR
+       ========================================================================= */
+    function flyNext() {
+      if (!playing || !cameraStops.length) return;
+
+      const stop = cameraStops[stopIndex % cameraStops.length];
+      stopIndex++;
+
+      map.flyTo({
+        center: stop.center,
+        zoom: stop.zoom,
+        pitch: stop.pitch,
+        bearing: stop.bearing,
+        duration: FLY_DURATION,
+        essential: true,
+        easing: (t) => 1 - Math.pow(1 - t, 3)
+      });
+
+      flyTimeout = setTimeout(() => {
+        flyNext();
+      }, FLY_DURATION + HOLD_DURATION);
+    }
+
+    function playTour() {
+      if (playing || !cameraStops.length) return;
+      playing = true;
+      stopIndex = 0;
+      flyNext();
+    }
+
+    function pauseTour() {
+      playing = false;
+      if (flyTimeout) {
+        clearTimeout(flyTimeout);
+        flyTimeout = null;
+      }
+    }
+
+    /* =========================================================================
+       8) LOAD DATA
+       ========================================================================= */
+    async function loadRows() {
+ const { data, error } = await sb
+  .from("mood_public_entries")
+  .select("mood, lon, lat, created_at")
+  .gte("created_at", START_FROM_UTC)
+  .order("created_at", { ascending: true })
+  .limit(MAX_POINTS);
+
+      if (error) {
+        console.error("DB load failed:", error);
+        return [];
+      }
+
+      const cleaned = (data || []).filter(r =>
+        typeof r.lon === "number" &&
+        typeof r.lat === "number" &&
+        r.created_at
+      );
+
+      return cleaned;
+    }
+
+    async function bootReplay() {
+      rows = await loadRows();
+      feats = rows.map(toFeature);
+
+      if (!rows.length) {
+        console.warn("No moods found from", START_FROM_UTC);
+        return;
+      }
+
+      setAllPoints();          // toutes les moods visibles tout de suite
+      cameraStops = buildCameraStops();
+      resetCamera();
+      playTour();
+    }
+
+    /* =========================================================================
+       9) TAB VISIBILITY
+       ========================================================================= */
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        pauseTour();
+      } else {
+        resetCamera();
+        playTour();
+      }
+    });
+
+    /* =========================================================================
+       10) INIT
+       ========================================================================= */
+    map.on("load", async () => {
+      ensureMoodImages();
+      initPointsSourceAndLayers();
+      await bootReplay();
+    });
+  </script>
+
+</body></html>

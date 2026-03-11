@@ -1,0 +1,241 @@
+/* Style uniquement pour le bouton de partage - Visible uniquement sur mobile */
+@media (max-width: 768px) {
+    #main-button {
+        position: fixed;
+        top: 50%;
+        right: 0;
+        transform: translateY(-50%);
+        
+        width: 50px;
+        height: 100px;
+        background: rgba(128, 128, 128, 0.4);
+        color: white;
+        border: none;
+        border-left: 2px solid rgba(255, 255, 255, 0.5);
+        border-radius: 70px 0 0 70px;
+        
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        cursor: pointer;
+        box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        
+        font-size: 12px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+    
+    #main-button:hover {
+        background: rgba(128, 128, 128, 0.9);
+        border-left: 3px solid rgba(255, 255, 255, 0.8);
+        width: 55px;
+        box-shadow: -8px 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    #main-button:active {
+        transform: translateY(-50%) scale(0.95);
+        background: rgba(64, 64, 64, 0.9);
+    }
+    
+    #main-button:focus-visible {
+        outline: 2px solid white;
+        outline-offset: 2px;
+    }
+}
+
+/* Sur PC (écrans plus grands que 768px), le bouton est invisible */
+@media (min-width: 769px) {
+    #main-button {
+        display: none;
+    }
+}
+
+/*overwrite */
+
+.panel-app {
+  width: 340px;
+  max-width: calc(75vw - 24px);
+}
+
+
+.fa {
+  padding: 20px;
+  font-size: 30px;
+  width: 50px;
+  text-align: center;
+  text-decoration: none;
+  margin: 5px 2px;
+}
+
+.fa:hover {
+    opacity: 0.7;
+}
+
+.fa-facebook {
+  background: #3B5998;
+  color: white;
+}
+
+.fa-twitter {
+  background: #55ACEE;
+  color: white;
+}
+
+.fa-google {
+  background: #dd4b39;
+  color: white;
+}
+
+.fa-linkedin {
+  background: #007bb5;
+  color: white;
+}
+
+.fa-youtube {
+  background: #bb0000;
+  color: white;
+}
+
+.fa-instagram {
+  background: #125688;
+  color: white;
+}
+
+.fa-pinterest {
+  background: #cb2027;
+  color: white;
+}
+
+.fa-snapchat-ghost {
+  background: #fffc00;
+  color: white;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+.fa-skype {
+  background: #00aff0;
+  color: white;
+}
+
+.fa-android {
+  background: #a4c639;
+  color: white;
+}
+
+.fa-dribbble {
+  background: #ea4c89;
+  color: white;
+}
+
+.fa-vimeo {
+  background: #45bbff;
+  color: white;
+}
+
+.fa-tumblr {
+  background: #2c4762;
+  color: white;
+}
+
+.fa-vine {
+  background: #00b489;
+  color: white;
+}
+
+.fa-foursquare {
+  background: #45bbff;
+  color: white;
+}
+
+.fa-stumbleupon {
+  background: #eb4924;
+  color: white;
+}
+
+.fa-flickr {
+  background: #f40083;
+  color: white;
+}
+
+.fa-yahoo {
+  background: #430297;
+  color: white;
+}
+
+.fa-soundcloud {
+  background: #ff5500;
+  color: white;
+}
+
+.fa-reddit {
+  background: #ff5700;
+  color: white;
+}
+
+.fa-rss {
+  background: #ff6600;
+  color: white;
+}
+
+.fa-whatsapp {
+  background: #25d366;
+  color: white;
+}
+
+#shareLink {
+	display: flex;
+	justify-content: space-between;
+	padding: 10px;
+	color: #07C;
+	font-size: 18px;
+	border: 1px dashed #07C;
+	border-radius: 3px;
+	cursor: pointer;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+#shareLink:before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+		background: #07C;
+    -webkit-transform: scaleX(0);
+    transform: scaleX(0);
+    -webkit-transform-origin: 100% 50%;
+    transform-origin: 100% 50%;
+    -webkit-transition-property: transform;
+    transition-property: transform;
+    -webkit-transition: 300ms ease-out;
+    transition: 300ms ease-out;
+}
+
+#shareLink .copied, .share-grid #shareLink .copied:hover, #shareLink.copied:before {
+	color: #FFF;
+	-webkit-transform: scaleX(1);
+  transform: scaleX(1);
+}
+
+#shareLink:hover {
+	color: #1A9EFB;
+	border-color: #1A9EFB;
+}
+
+#shareLink:after {
+	content: '\f24d';
+	display: inline-block;
+	font: normal normal normal 14px/1 FontAwesome;
+	font-size: 20px;
+	padding-left: 20px;
+}
