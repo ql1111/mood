@@ -58,28 +58,13 @@
     /* =========================================================================
        1) MAP SETUP
        ========================================================================= */
-    const map = new maplibregl.Map({
-      container: "map",
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: "raster",
-            tiles: [
-              "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            ],
-            tileSize: 256,
-            attribution: "© OpenStreetMap contributors"
-          }
-        },
-        layers: [{ id: "osm", type: "raster", source: "osm" }]
-      },
-      center: [0, 20],
-      zoom: 2,
-      pitch: 0
-    });
+
+   const map = new maplibregl.Map({
+     container: "map",
+     style: "https://tiles.openfreemap.org/styles/liberty",
+     center: [0,20],
+     zoom: 2
+   });
 
     /* =========================================================================
        2) MOOD ICONS (0..10)
